@@ -1,18 +1,238 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { HorizontalBox, VerticalBox, Palette, Button, AboutSlint } from "std-widgets.slint";
+import "fonts/Orbitron-VariableFont_wght.ttf";
+import "fonts/Orbitron-Bold.ttf";
 
-export component AppWindow inherits Window {
-    in-out property <int> counter: 42;
-    callback request-increase-value();
-    VerticalBox {
-        Text {
-            text: "Counter: \{root.counter}";
+// struct TileData {
+//     image: image,
+//     image_visible: bool,
+//     solved: bool,
+// }
+
+// component MemoryTile inherits Rectangle {
+//     callback clicked;
+//     in property <bool> open_curtain;
+//     in property <bool> solved;
+//     in property <image> icon;
+
+//     width: 64px;
+//     height: 64px;
+//     open-curtain: false;
+//     background: solved ? #34CE57 : #3960D5;
+//     animate background { duration: 800ms; }
+
+//     Image {
+//         source: icon;
+//         width: parent.width;
+//         height: parent.height;
+//     }
+
+//     Rectangle {
+//         background: #193076;
+//         x: 0px;
+//         width: open_curtain ? 0px : (parent.width / 2);
+//         height: parent.height;
+//         animate width { duration: 250ms; easing: ease-in; }
+//     }
+
+//     Rectangle {
+//         background: #193076;
+//         x: open_curtain ? parent.width : (parent.width / 2);
+//         width: open_curtain ? 0px : (parent.width / 2);
+//         height: parent.height;
+//         animate width { duration: 250ms; easing: ease-in; }
+//         animate x { duration: 250ms; easing: ease-in; }
+//     }
+
+//     TouchArea {
+//         clicked => {
+//             // Delegate to the user of this element
+//             root.clicked();
+//         }
+//     }
+// }
+
+component MenuBar inherits Rectangle {
+    // background: #ABCCD2;
+    background: @linear-gradient(180deg, #C5EAEC 0%, #819C9C 50%, #484F51 100%);
+    width: 512px;
+    height: 60px;
+    x: 0px;
+    y: 0px;
+
+    callback file_button();
+    
+    HorizontalLayout {
+        padding-left: 25px;
+        padding-right: 25px;
+        spacing: -5px;
+
+        Rectangle {
+            background: #28373B;
+            width: (parent.height * 0.75);
+            height: (parent.height * 0.75);
+            y: ((parent.height - self.height) / 2);
+            border-radius: 25px;
+
+            HorizontalLayout {
+                padding: 2px;
+                Rectangle {
+                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
+                    // width: (parent.height * 0.75);
+                    // height: (parent.height * 0.75);
+                    y: ((parent.height - self.height) / 2);
+                    border-radius: 25px;
+                    Image {
+                        source: @image-url("icons/home.svg");
+                        colorize: @linear-gradient(180deg, #D2F6F7 0%, #B6D8D9 50%, #484F51 100%);
+                        width: (parent.height * 0.9);
+                        height: (parent.height * 0.9);
+                    }
+                }
+            }
         }
 
-        Button {
-            text: "Increase value";
-            clicked => {
-                root.request-increase-value();
+        Rectangle {
+            background: #28373B;
+            height: (parent.height * 0.3);
+            y: ((parent.height - self.height) / 2);
+            width: 100px;
+            z: -1.0;
+        }
+
+        Rectangle {
+            background: #28373B;
+            width: 200px;
+            height: (parent.height * 0.75);
+            y: ((parent.height - self.height) / 2);
+            border-top-left-radius: (self.height / 2);
+            border-bottom-left-radius: (self.height / 2);
+
+            HorizontalLayout {
+                padding: 2px;
+                spacing: 2px;
+
+                file := Rectangle {
+                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
+                    border-top-left-radius: (self.height / 2);
+                    border-bottom-left-radius: (self.height / 2);
+                    Text {
+                        color: white;
+                        text: "FILE";
+                        font-weight: 700;
+                    }
+                    TouchArea {
+                        clicked => {
+                            root.file_button();
+                        }
+                    }
+                }
+
+                preferences := Rectangle {
+                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
+                    height: (parent.height * 0.95);
+                    Text {
+                        color: white;
+                        text: "PREFERENCES";
+                        font-weight: 700;
+                    }
+                }
             }
         }
     }
+
+}
+
+component PlayBar inherits Rectangle {
+    // background: #ABCCD2;
+    background: #28373B;
+    width: 512px;
+    height: 60px;
+    x: 0px;
+
+    callback play_button();
+
+    Rectangle {
+        background: #28373B;
+        width: (parent.height * 0.75);
+        height: (parent.height * 0.75);
+        y: ((parent.height - self.height) / 2);
+        border-radius: 25px;
+
+        HorizontalLayout {
+            padding: 2px;
+            Rectangle {
+                background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
+                // width: (parent.height * 0.75);
+                // height: (parent.height * 0.75);
+                y: ((parent.height - self.height) / 2);
+                border-radius: 25px;
+                Image {
+                    source: @image-url("icons/home.svg");
+                    colorize: @linear-gradient(180deg, #D2F6F7 0%, #B6D8D9 50%, #484F51 100%);
+                    width: (parent.height * 0.9);
+                    height: (parent.height * 0.9);
+                }
+                TouchArea {
+                    clicked => {
+                        root.play_button();
+                    }
+                }
+            }
+        }
+    }
+}
+
+// component WorkSpace inherits Rectangle {
+//     in property <bool> disable_tiles;
+//     callback check_if_pair_solved();
+
+//     in property <[TileData]> memory_tiles: [
+//         { image: @image-url("icons/at.png") },
+//         { image: @image-url("icons/balance-scale.png") },
+//         { image: @image-url("icons/bicycle.png") },
+//         { image: @image-url("icons/bus.png") },
+//         { image: @image-url("icons/cloud.png") },
+//         { image: @image-url("icons/cogs.png") },
+//         { image: @image-url("icons/motorcycle.png") },
+//         { image: @image-url("icons/video.png") },
+//     ];
+//     for tile[i] in memory_tiles : MemoryTile {
+//         x: mod(i, 4) * 74px;
+//         y: floor(i / 4) * 74px;
+//         width: 64px;
+//         height: 64px;
+//         icon: tile.image;
+//         open_curtain: tile.image_visible || tile.solved;
+//         // propagate the solved status from the model to the tile
+//         solved: tile.solved;
+//         clicked => {
+//             if (!root.disable_tiles) {
+//                 tile.image_visible = true;
+//                 root.check_if_pair_solved();
+//             }
+//         }
+//     }
+// }
+
+export component MainWindow inherits Window {
+    width: 512px;
+    height: 512px;
+    default-font-family: "Orbitron";
+
+    callback check_if_pair_solved();
+    callback play_button();
+    callback file_button();
+    in property <bool> disable_tiles;
+
+    MenuBar {
+        width: parent.width;
+        file_button => { root.file_button() }
+    }
+
+    PlayBar {
+        width: parent.width;
+        y: (parent.height - self.height);
+        play_button => { root.play_button() }
+    }
+
 }
