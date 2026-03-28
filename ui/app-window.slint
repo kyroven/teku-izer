@@ -60,6 +60,7 @@ component MenuBar inherits Rectangle {
     y: 0px;
 
     callback file_button();
+    in property <int> test_counter;
     
     HorizontalLayout {
         padding-left: 25px;
@@ -215,14 +216,19 @@ component PlayBar inherits Rectangle {
 // }
 
 export component MainWindow inherits Window {
-    width: 512px;
-    height: 512px;
+    preferred-width: 512px;
+    preferred-height: 512px;
+    min-width: 128px;
+    min-height: 128px;
+    max-width: 19200px;
+    max-height: 10800px;
     default-font-family: "Orbitron";
 
     callback check_if_pair_solved();
     callback play_button();
     callback file_button();
     in property <bool> disable_tiles;
+    in property <int> test_counter;
 
     MenuBar {
         width: parent.width;

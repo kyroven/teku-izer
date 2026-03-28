@@ -10,6 +10,7 @@ rfd = "0.17.2"
 rodio = "0.22.2"
 slint = "1.14.1"
 tokio = "1.50.0"
+trpl = "0.3.0"
 
 [build-dependencies]
 slint-build = "1.14.1"

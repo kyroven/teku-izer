@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::error::Error;
-use std::io::BufReader;
+use std::sync::{Arc, Mutex, MutexGuard};
 
 use rfd::{AsyncFileDialog, FileHandle};
 
@@ -11,35 +11,52 @@ slint::include_modules!();
 fn main() -> Result<(), Box<dyn Error>> {
     // use slint::Model;
 
-    let current_file: Option<FileHandle> = None;
+    let current_file: Arc<Mutex<Option<FileHandle>>> = Arc::new(Mutex::new(None));
     
-    let main_window = MainWindow::new()?;
+    let ui = MainWindow::new()?;
 
     // let file = Option<
 
     
-    main_window.on_play_button(move || {
-        println!("play song!");
+    ui.on_play_button({
+        let current_file_handle = Arc::clone(&current_file);
+        move || {
+            println!("play song!");
+
+            let val = current_file_handle.lock().unwrap();
+            println!("hmm: {val:?}",);
+        }
     });
+
     
-    main_window.on_file_button(move || {
-        println!("file button!");
-        slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
-            println!("test");
-        });
-        slint::spawn_local(async move {
-            let file = AsyncFileDialog::new()
-            .add_filter("text", &["txt", "rs"])
-            .add_filter("rust", &["rs", "toml"])
-            .set_directory("/")
-            .pick_file()
-            .await;
-        
-    }).unwrap();
+    ui.on_file_button({
+        let ui_handle = ui.as_weak();
+        move || {
+            let current_file_handle = Arc::clone(&current_file);
+            let ui = ui_handle.unwrap();
+            println!("file button!");
+            slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
+                println!("test");
+            });
+            slint::spawn_local(async move {
+                let file = AsyncFileDialog::new()
+                    .add_filter("text", &["txt", "rs"])
+                    .add_filter("rust", &["rs", "toml"])
+                    .set_directory("/")
+                    .pick_file()
+                    .await;
+                let prev = ui.get_test_counter();
+                println!("{prev}");
+                ui.set_test_counter(prev + 1);
+                if let Some(f) = file {
+                    let mut current_file = current_file_handle.lock().unwrap();
+                    // tx.send(f).unwrap();
+                    *current_file = Some(f);
+                }
+            }).unwrap();
+    }});
     
-    });
-    
-    main_window.run()?;
+    ui.run()?;
     
 
     Ok(())
