@@ -3,8 +3,11 @@
 
 use std::error::Error;
 use std::sync::{Arc, Mutex, MutexGuard};
+use std::io::BufReader;
+use std::fs::File;
 
 use rfd::{AsyncFileDialog, FileHandle};
+use rodio::Decoder;
 
 slint::include_modules!();
 
@@ -12,6 +15,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // use slint::Model;
 
     let current_file: Arc<Mutex<Option<FileHandle>>> = Arc::new(Mutex::new(None));
+
+    let audio_sink_handle = rodio::DeviceSinkBuilder::open_default_sink()
+        .expect("open default audio stream");
+    let test_file = BufReader::new(File::open("examples/funky.wav").unwrap());
+    let audio_player = Arc::new(rodio::play(&audio_sink_handle.mixer(), test_file).unwrap());
+    
     
     let ui = MainWindow::new()?;
 
@@ -20,11 +29,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     ui.on_play_button({
         let current_file_handle = Arc::clone(&current_file);
+        let audio_player_handle = Arc::clone(&audio_player);
         move || {
             println!("play song!");
 
             let val = current_file_handle.lock().unwrap();
             println!("hmm: {val:?}",);
+            if !audio_player_handle.is_paused() {
+                audio_player_handle.pause();
+            } else {
+                audio_player_handle.play();
+            }
         }
     });
 
@@ -32,6 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.on_file_button({
         let ui_handle = ui.as_weak();
         move || {
+            let audio_player_handle = Arc::clone(&audio_player);
             let current_file_handle = Arc::clone(&current_file);
             let ui = ui_handle.unwrap();
             println!("file button!");
@@ -40,8 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             });
             slint::spawn_local(async move {
                 let file = AsyncFileDialog::new()
-                    .add_filter("text", &["txt", "rs"])
-                    .add_filter("rust", &["rs", "toml"])
+                    .add_filter("audio", &["ogg", "wav", "flac", "mp3"])
                     .set_directory("/")
                     .pick_file()
                     .await;
@@ -51,7 +66,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 if let Some(f) = file {
                     let mut current_file = current_file_handle.lock().unwrap();
                     // tx.send(f).unwrap();
-                    *current_file = Some(f);
+                    *current_file = Some(f.clone());
+                    audio_player_handle.clear();
+                    let buf = BufReader::new(File::open(f.path()).unwrap());
+                    audio_player_handle.append(Decoder::try_from(buf).unwrap());
                 }
             }).unwrap();
     }});
