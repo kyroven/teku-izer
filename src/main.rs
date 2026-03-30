@@ -6,16 +6,27 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::io::BufReader;
 use std::fs::File;
+use std::time::Duration;
 
 use rfd::{AsyncFileDialog, FileHandle};
-use rodio::Decoder;
+use rodio::{Decoder, Source};
 
 slint::include_modules!();
+
+struct Media {
+    file: FileHandle,
+    length: Duration,
+    title: Option<String>,
+    artist: Option<String>,
+}
 
 fn main() -> Result<(), Box<dyn Error>> {
     // use slint::Model;
 
     let current_file: Arc<Mutex<Option<FileHandle>>> = Arc::new(Mutex::new(None));
+    let current_media: Arc<Mutex<Option<Media>>> = Arc::new(Mutex::new(None));
+
+    let current_length: Arc<Mutex<Option<Duration>>> = Arc::new(Mutex::new(None));
 
     let audio_sink_handle = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
@@ -51,6 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let audio_player = Arc::clone(&audio_player);
         move || {
             let current_file_handle = Arc::clone(&current_file);
+            let current_media_handle = Arc::clone(&current_media);
             let ui = ui_handle.unwrap();
             let audio_player_handle = Arc::clone(&audio_player);
             slint::spawn_local(async move {
@@ -64,8 +76,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     *current_file = Some(handle.clone());
                     read_metadata(&ui, handle.path());
                     let buf = BufReader::new(File::open(handle.path()).unwrap());
+                    let source = Decoder::try_from(buf).unwrap().track_position();
                     audio_player_handle.clear();
-                    audio_player_handle.append(Decoder::try_from(buf).unwrap());
+                    audio_player_handle.append(source);
                     // ui.set_media_artist()
                     ui.set_file_selected(true);
                 }

@@ -1,6 +1,41 @@
 import { Slider, HorizontalBox, VerticalBox } from "std-widgets.slint";
 import { SlimSlider } from "edited-std-widgets/slider.slint";
 import { Palette } from "palette.slint";
+import "fonts/Orbitron-VariableFont_wght.ttf";
+import "fonts/Orbitron-Bold.ttf";
+import "fonts/Orbitron-ExtraBold.ttf";
+
+component SeekBar {
+    in-out property <int> current_time: 0;
+    in property <int> total_duration;
+    in property <bool> file_selected: false;
+    in property <length> available_space: 350px;
+    in property <string> font-family: "Orbitron";
+
+    HorizontalLayout {
+        spacing: 5px;
+        
+        current_label := Text {
+            font-family: root.font-family;
+            text: root.file_selected ? "\{root.current_time}" : "--:--";
+            color: Palette.accent-background;
+        }
+
+        SlimSlider {
+            fill: Palette.secondary-accent-background;
+            minimum: 0.0;
+            maximum: root.total_duration;
+            width: clamp(root.available_space, 100px, 400px);
+            value: root.current_time;
+        }
+
+        total_label := Text {
+            font-family: root.font-family;
+            text: root.file_selected ? "\{root.total_duration}" : "--:--";
+            color: Palette.accent-background;
+        }
+    }
+}
 
 export component PlayBar inherits Rectangle {
     // background: #ABCCD2;
@@ -8,6 +43,7 @@ export component PlayBar inherits Rectangle {
     width: 800px;
     height: 60px;
     x: 0px;
+    in property <string> font-family: "Orbitron";
 
     callback play_button();
     callback change_volume(float);
@@ -15,7 +51,8 @@ export component PlayBar inherits Rectangle {
     in property <bool> file_selected: false;
     in property <string> media_title: "NO SONG SELECTED";
     in property <string> media_artist: "-----------";
-    in property <string> font-family: "Orbitron";
+
+    in property <int> current_time: 0;
 
     Text {
         text: parent.media_title;
@@ -75,7 +112,7 @@ export component PlayBar inherits Rectangle {
     volume := HorizontalBox {
         x: 600px;
         SlimSlider {
-            fill : #A5CDD3;
+            fill : Palette.secondary-accent-background;
             value: 1.0;
             maximum: 1.0;
             minimum: 0.0;
@@ -85,4 +122,15 @@ export component PlayBar inherits Rectangle {
             }
         }
     }
+
+    SeekBar {
+        current_time: root.current_time;
+        total_duration: 0;
+        file_selected: root.file_selected;
+
+        font-family: root.font-family;
+        x: ((parent.width / 2) - (self.width / 2));
+        y: ((parent.height * 0.75) - (self.height / 2));
+    }
 }
+
