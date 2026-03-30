@@ -13,12 +13,12 @@ export component PlayBar inherits Rectangle {
     callback change_volume(float);
     in property <bool> playing;
     in property <bool> file_selected: false;
-    in property <string> media_name: "NO SONG SELECTED";
+    in property <string> media_title: "NO SONG SELECTED";
     in property <string> media_artist: "-----------";
     in property <string> font-family: "Orbitron";
 
     Text {
-        text: parent.media_name;
+        text: parent.media_title;
         x: 15px;
         y: 15px;
         font-family: root.font-family;

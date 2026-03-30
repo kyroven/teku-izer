@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::error::Error;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::io::BufReader;
 use std::fs::File;
@@ -60,13 +61,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .await;
                 if let Some(handle) = file {
                     let mut current_file = current_file_handle.lock().unwrap();
-                    // tx.send(f).unwrap();
                     *current_file = Some(handle.clone());
-                    audio_player_handle.clear();
-                    // let metadata = std::fs::metadata(handle.path()).unwrap();
-                    // ui.set_media_artist()
+                    read_metadata(&ui, handle.path());
                     let buf = BufReader::new(File::open(handle.path()).unwrap());
+                    audio_player_handle.clear();
                     audio_player_handle.append(Decoder::try_from(buf).unwrap());
+                    // ui.set_media_artist()
                     ui.set_file_selected(true);
                 }
             }).unwrap();
@@ -87,45 +87,24 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-// Fetch the tiles from the model
-// let mut tiles: Vec<TileData> = main_window.get_memory_tiles().iter().collect();
-// Duplicate them to ensure that we have pairs
-// tiles.extend(tiles.clone());
-
-// Randomly mix the tiles
-// use rand::seq::SliceRandom;
-// let mut rng = rand::rng();
-// tiles.shuffle(&mut rng);
-
-// // Assign the shuffled Vec to the model property
-// let tiles_model = std::rc::Rc::new(slint::VecModel::from(tiles));
-// main_window.set_memory_tiles(tiles_model.clone().into());
-
-// let main_window_weak = main_window.as_weak();
-// main_window.on_check_if_pair_solved(move || {
-//     let mut flipped_tiles = 
-//         tiles_model.iter().enumerate().filter(|(_, tile)| tile.image_visible && !tile.solved);
-
-//     if let (Some((t1_idx, mut t1)), Some((t2_idx, mut t2))) =
-//         (flipped_tiles.next(), flipped_tiles.next())
-//     {
-//         let is_pair_solved = t1 == t2;
-//         if is_pair_solved {
-//             t1.solved = true;
-//             tiles_model.set_row_data(t1_idx, t1);
-//             t2.solved = true;
-//             tiles_model.set_row_data(t2_idx, t2);
-//         } else {
-//             let main_window = main_window_weak.unwrap();
-//             main_window.set_disable_tiles(true);
-//             let tiles_model = tiles_model.clone();
-//             slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
-//                 main_window.set_disable_tiles(false);
-//                 t1.image_visible = false;
-//                 tiles_model.set_row_data(t1_idx, t1);
-//                 t2.image_visible = false;
-//                 tiles_model.set_row_data(t2_idx, t2);
-//             });
-//         }
-//     }
-// });
+fn read_metadata(ui: &MainWindow, path: &Path) {
+    if let Some(ext) = path.extension() {
+        if ext == "mp3" || ext == "mp4" || ext == "flac" {
+            let tag = audiotags::Tag::new().read_from_path(path).unwrap();
+            if let Some(title) = tag.title() {
+                ui.set_media_title(String::from(title).into());
+            } else {
+                ui.set_media_title(String::from("UNKNOWN TRACK").into());
+            }
+            
+            if let Some(artist) = tag.artist() {
+                ui.set_media_artist(String::from(artist).into());
+            } else {
+                ui.set_media_artist(String::from("UNKNOWN ARTIST").into());
+            }
+        } else {
+            ui.set_media_title(String::from("UNKNOWN TRACK").into());
+            ui.set_media_artist(String::from("UNKNOWN ARTIST").into());
+        }
+    }
+}
