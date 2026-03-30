@@ -15,9 +15,48 @@ slint::include_modules!();
 
 struct Media {
     file: FileHandle,
-    length: Duration,
+    duration: Option<Duration>,
     title: Option<String>,
     artist: Option<String>,
+    source: Decoder<BufReader<File>>,
+}
+impl Media {
+    pub fn new(file: FileHandle) -> Self {
+        let (title, artist) = read_metadata(file.path());
+        let source = create_source(file.path()).unwrap();
+        let duration = source.total_duration();
+        Self {
+            file,
+            duration,
+            title,
+            artist,
+            source,
+        }
+    }
+
+    pub fn path(&self) -> &Path {
+        self.file.path()
+    }
+}
+
+fn read_metadata(path: &Path) -> (Option<String>, Option<String>) {
+    if let Some(ext) = path.extension() {
+        if ext == "mp3" || ext == "mp4" || ext == "flac" {
+            let tag = audiotags::Tag::new().read_from_path(path).unwrap();
+            return (tag.title().map(String::from), tag.artist().map(String::from))
+        } else {
+            return (None, None)
+        }
+    }
+    // TODO i don't think we need this because i don't think path.extension() will ever return none
+    // or at least if it would, we would've hit an error before this point
+    return (None, None)
+}
+
+fn create_source(path: &Path) -> Result<Decoder<BufReader<File>>, <Decoder<BufReader<File>> as TryFrom<BufReader<File>>>::Error> {
+    let file = File::open(path).unwrap();
+    let buf = BufReader::new(file);
+    Decoder::try_from(buf)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -73,7 +112,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     .await;
                 if let Some(handle) = file {
                     let mut current_file = current_file_handle.lock().unwrap();
+                    let mut current_media = current_media_handle.lock().unwrap();
                     *current_file = Some(handle.clone());
+
                     read_metadata(&ui, handle.path());
                     let buf = BufReader::new(File::open(handle.path()).unwrap());
                     let source = Decoder::try_from(buf).unwrap().track_position();
