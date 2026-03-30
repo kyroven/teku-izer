@@ -1,0 +1,88 @@
+import { Slider, HorizontalBox, VerticalBox } from "std-widgets.slint";
+import { SlimSlider } from "edited-std-widgets/slider.slint";
+import { Palette } from "palette.slint";
+
+export component PlayBar inherits Rectangle {
+    // background: #ABCCD2;
+    background: #28373B;
+    width: 800px;
+    height: 60px;
+    x: 0px;
+
+    callback play_button();
+    callback change_volume(float);
+    in property <bool> playing;
+    in property <bool> file_selected: false;
+    in property <string> media_name: "NO SONG SELECTED";
+    in property <string> media_artist: "-----------";
+    in property <string> font-family: "Orbitron";
+
+    Text {
+        text: parent.media_name;
+        x: 15px;
+        y: 15px;
+        font-family: root.font-family;
+        letter-spacing: 1px;
+        color: parent.background.brighter(2.5);
+    }
+
+    Text {
+        text: parent.media_artist;
+        x: 15px;
+        y: 30px;
+        font-family: root.font-family;
+        color: parent.background.brighter(2.5);
+    }
+
+    play_button := Rectangle {
+        background: #28373B;
+        width: (parent.height * 0.75);
+        height: self.width;
+        y: ((parent.height - self.height) / 2);
+        border-radius: 25px;
+        animate width { duration: 50ms; }
+
+        states [
+            hover when ta.has-hover && !ta.pressed : {
+                play_button.width: (parent.height * 0.8);
+            }
+        ]
+
+        HorizontalLayout {
+            padding: 2px;
+            Rectangle {
+                background: root.file_selected ? Palette.secondary-accent-background : #6f898d;
+                // width: (parent.height * 0.75);
+                // height: (parent.height * 0.75);
+                y: ((parent.height - self.height) / 2);
+                border-radius: 25px;
+                Image {
+                    source: root.playing ? @image-url("icons/pause.svg") : @image-url("icons/play.svg");
+                    colorize: #28373B;
+                    width: (parent.height * 0.9);
+                    height: (parent.height * 0.9);
+                }
+                ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.play_button();
+                    }
+                }
+            }
+        }
+    }
+
+    volume := HorizontalBox {
+        x: 600px;
+        SlimSlider {
+            fill : #A5CDD3;
+            value: 1.0;
+            maximum: 1.0;
+            minimum: 0.0;
+            width: 100px;
+            changed(value) => {
+                change_volume(value);
+            }
+        }
+    }
+}

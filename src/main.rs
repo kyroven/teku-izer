@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::error::Error;
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use std::io::BufReader;
 use std::fs::File;
 
@@ -18,61 +18,68 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let audio_sink_handle = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
-    let test_file = BufReader::new(File::open("examples/funky.wav").unwrap());
-    let audio_player = Arc::new(rodio::play(&audio_sink_handle.mixer(), test_file).unwrap());
-    
+    // let test_file = BufReader::new(File::open("examples/funky.wav").unwrap());
+    // let audio_player = Arc::new(rodio::play(&audio_sink_handle.mixer(), test_file).unwrap());
+    let audio_player = Arc::new(rodio::Player::connect_new(&audio_sink_handle.mixer()));
     
     let ui = MainWindow::new()?;
 
-    // let file = Option<
-
-    
     ui.on_play_button({
+        let ui_handle = ui.as_weak();
         let current_file_handle = Arc::clone(&current_file);
         let audio_player_handle = Arc::clone(&audio_player);
         move || {
-            println!("play song!");
+            let ui = ui_handle.unwrap();
 
             let val = current_file_handle.lock().unwrap();
-            println!("hmm: {val:?}",);
-            if !audio_player_handle.is_paused() {
-                audio_player_handle.pause();
-            } else {
-                audio_player_handle.play();
+            if let Some(_) = *val {
+                if !audio_player_handle.is_paused() {
+                    audio_player_handle.pause();
+                    ui.set_media_playing(false);
+                    
+                } else {
+                    audio_player_handle.play();
+                    ui.set_media_playing(true);
+                }
             }
         }
     });
 
-    
     ui.on_file_button({
         let ui_handle = ui.as_weak();
+        let audio_player = Arc::clone(&audio_player);
         move || {
-            let audio_player_handle = Arc::clone(&audio_player);
             let current_file_handle = Arc::clone(&current_file);
             let ui = ui_handle.unwrap();
-            println!("file button!");
-            slint::Timer::single_shot(std::time::Duration::from_secs(1), move || {
-                println!("test");
-            });
+            let audio_player_handle = Arc::clone(&audio_player);
             slint::spawn_local(async move {
                 let file = AsyncFileDialog::new()
                     .add_filter("audio", &["ogg", "wav", "flac", "mp3"])
                     .set_directory("/")
                     .pick_file()
                     .await;
-                let prev = ui.get_test_counter();
-                println!("{prev}");
-                ui.set_test_counter(prev + 1);
-                if let Some(f) = file {
+                if let Some(handle) = file {
                     let mut current_file = current_file_handle.lock().unwrap();
                     // tx.send(f).unwrap();
-                    *current_file = Some(f.clone());
+                    *current_file = Some(handle.clone());
                     audio_player_handle.clear();
-                    let buf = BufReader::new(File::open(f.path()).unwrap());
+                    // let metadata = std::fs::metadata(handle.path()).unwrap();
+                    // ui.set_media_artist()
+                    let buf = BufReader::new(File::open(handle.path()).unwrap());
                     audio_player_handle.append(Decoder::try_from(buf).unwrap());
+                    ui.set_file_selected(true);
                 }
             }).unwrap();
     }});
+
+    ui.on_change_volume({
+        let ui_handle = ui.as_weak();
+        let audio_player_handle = Arc::clone(&audio_player);
+        move || {
+            let ui = ui_handle.unwrap();
+            audio_player_handle.set_volume(ui.get_volume_level());
+        }
+    });
     
     ui.run()?;
     
