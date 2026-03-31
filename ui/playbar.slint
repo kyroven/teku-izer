@@ -12,6 +12,13 @@ component SeekBar {
     in property <length> available_space: 350px;
     in property <string> font-family: "Orbitron";
 
+    function format_time(time: int) -> string {
+        let time_as_secs = (time / 1000).floor();
+        let mins = (time_as_secs / 60).floor();
+        let secs = (time_as_secs - (mins * 60));
+        return "\{mins}:\{secs}";
+    }
+
     HorizontalLayout {
         spacing: 5px;
         
@@ -31,7 +38,7 @@ component SeekBar {
 
         total_label := Text {
             font-family: root.font-family;
-            text: root.file_selected ? "\{root.total_duration}" : "--:--";
+            text: root.file_selected ? "\{root.format_time(root.total_duration)}" : "--:--";
             color: Palette.accent-background;
         }
     }
@@ -53,6 +60,7 @@ export component PlayBar inherits Rectangle {
     in property <string> media_artist: "-----------";
 
     in property <int> current_time: 0;
+    in property <int> total_duration;
 
     Text {
         text: parent.media_title;
@@ -125,7 +133,7 @@ export component PlayBar inherits Rectangle {
 
     SeekBar {
         current_time: root.current_time;
-        total_duration: 0;
+        total_duration: root.total_duration;
         file_selected: root.file_selected;
 
         font-family: root.font-family;

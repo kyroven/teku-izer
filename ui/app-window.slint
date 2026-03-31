@@ -283,6 +283,7 @@ export component MainWindow inherits Window {
     in property <string> media_artist: "-----------";
     out property <float> volume_level: 1.0;
     in property <int> current_time: 0;
+    in property <int> total_duration: 0;
 
     MenuBar {
         width: parent.width;
@@ -298,6 +299,7 @@ export component MainWindow inherits Window {
         media_title: root.media_title;
         media_artist: media_artist;
         current_time: root.current_time;
+        total_duration: root.total_duration;
         change_volume(level) => { root.volume_level = level; root.change_volume() }
     }
 

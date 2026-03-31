@@ -18,6 +18,7 @@ struct Media {
     duration: Option<f64>,
     title: Option<String>,
     artist: Option<String>,
+    source: Option<Decoder<BufReader<File>>>,
 }
 impl Media {
     pub fn new(file: FileHandle) -> Self {
@@ -27,6 +28,7 @@ impl Media {
             duration,
             title,
             artist,
+            source: None,
         }
     }
 
@@ -34,7 +36,17 @@ impl Media {
         self.file.path()
     }
 
-    pub fn create_source(&self) -> Result<Decoder<BufReader<File>>, <Decoder<BufReader<File>> as TryFrom<BufReader<File>>>::Error> {
+    /// Moves `source` out of self if it already exists, otherwise creates and returns new `source`
+    pub fn source(&mut self) -> Result<Decoder<BufReader<File>>, <Decoder<BufReader<File>> as TryFrom<BufReader<File>>>::Error> {
+        if let Some(_) = &mut self.source {
+            let res = std::mem::replace(&mut self.source, None);
+            return Ok(res.unwrap())
+        } else {
+            return self.create_source()
+        }
+    }
+
+    fn create_source(&self) -> Result<Decoder<BufReader<File>>, <Decoder<BufReader<File>> as TryFrom<BufReader<File>>>::Error> {
         let file = File::open(self.path()).unwrap();
         let buf = BufReader::new(file);
         Decoder::try_from(buf)
@@ -113,8 +125,12 @@ fn main() -> Result<(), Box<dyn Error>> {
                     *current_file = Some(handle.clone());
                     let new_media = Media::new(handle);
                     set_metadata(&ui, &new_media);
+                    let source = new_media.create_source().unwrap();
+                    if let Some(duration) = source.total_duration() {
+                        ui.set_total_duration(duration.as_millis() as i32);
+                    };
                     audio_player_handle.clear();
-                    audio_player_handle.append(new_media.create_source().unwrap());
+                    audio_player_handle.append(source);
                     // ui.set_media_artist()
                     ui.set_file_selected(true);
                 }
@@ -145,6 +161,6 @@ fn set_metadata(ui: &MainWindow, media: &Media) {
     if let Some(artist) = &media.artist {
         ui.set_media_artist(artist.into());
     } else {
-        ui.set_media_title(String::from("UNKNOWN ARTIST").into());
+        ui.set_media_artist(String::from("UNKNOWN ARTIST").into());
     }
 }
