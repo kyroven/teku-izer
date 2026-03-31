@@ -15,48 +15,45 @@ slint::include_modules!();
 
 struct Media {
     file: FileHandle,
-    duration: Option<Duration>,
+    duration: Option<f64>,
     title: Option<String>,
     artist: Option<String>,
-    source: Decoder<BufReader<File>>,
 }
 impl Media {
     pub fn new(file: FileHandle) -> Self {
-        let (title, artist) = read_metadata(file.path());
-        let source = create_source(file.path()).unwrap();
-        let duration = source.total_duration();
+        let (title, artist, duration) = read_metadata(file.path());
         Self {
             file,
             duration,
             title,
             artist,
-            source,
         }
     }
 
     pub fn path(&self) -> &Path {
         self.file.path()
     }
+
+    pub fn create_source(&self) -> Result<Decoder<BufReader<File>>, <Decoder<BufReader<File>> as TryFrom<BufReader<File>>>::Error> {
+        let file = File::open(self.path()).unwrap();
+        let buf = BufReader::new(file);
+        Decoder::try_from(buf)
+    }
 }
 
-fn read_metadata(path: &Path) -> (Option<String>, Option<String>) {
+fn read_metadata(path: &Path) -> (Option<String>, Option<String>, Option<f64>) {
     if let Some(ext) = path.extension() {
         if ext == "mp3" || ext == "mp4" || ext == "flac" {
             let tag = audiotags::Tag::new().read_from_path(path).unwrap();
-            return (tag.title().map(String::from), tag.artist().map(String::from))
+            println!("duration: {:?}", tag.duration());
+            return (tag.title().map(String::from), tag.artist().map(String::from), tag.duration())
         } else {
-            return (None, None)
+            return (None, None, None)
         }
     }
     // TODO i don't think we need this because i don't think path.extension() will ever return none
     // or at least if it would, we would've hit an error before this point
-    return (None, None)
-}
-
-fn create_source(path: &Path) -> Result<Decoder<BufReader<File>>, <Decoder<BufReader<File>> as TryFrom<BufReader<File>>>::Error> {
-    let file = File::open(path).unwrap();
-    let buf = BufReader::new(file);
-    Decoder::try_from(buf)
+    return (None, None, None)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -114,12 +111,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let mut current_file = current_file_handle.lock().unwrap();
                     let mut current_media = current_media_handle.lock().unwrap();
                     *current_file = Some(handle.clone());
-
-                    read_metadata(&ui, handle.path());
-                    let buf = BufReader::new(File::open(handle.path()).unwrap());
-                    let source = Decoder::try_from(buf).unwrap().track_position();
+                    let new_media = Media::new(handle);
+                    set_metadata(&ui, &new_media);
                     audio_player_handle.clear();
-                    audio_player_handle.append(source);
+                    audio_player_handle.append(new_media.create_source().unwrap());
                     // ui.set_media_artist()
                     ui.set_file_selected(true);
                 }
@@ -141,24 +136,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn read_metadata(ui: &MainWindow, path: &Path) {
-    if let Some(ext) = path.extension() {
-        if ext == "mp3" || ext == "mp4" || ext == "flac" {
-            let tag = audiotags::Tag::new().read_from_path(path).unwrap();
-            if let Some(title) = tag.title() {
-                ui.set_media_title(String::from(title).into());
-            } else {
-                ui.set_media_title(String::from("UNKNOWN TRACK").into());
-            }
-            
-            if let Some(artist) = tag.artist() {
-                ui.set_media_artist(String::from(artist).into());
-            } else {
-                ui.set_media_artist(String::from("UNKNOWN ARTIST").into());
-            }
-        } else {
-            ui.set_media_title(String::from("UNKNOWN TRACK").into());
-            ui.set_media_artist(String::from("UNKNOWN ARTIST").into());
-        }
+fn set_metadata(ui: &MainWindow, media: &Media) {
+    if let Some(title) = &media.title {
+        ui.set_media_title(title.into());
+    } else {
+        ui.set_media_title(String::from("UNKNOWN TITLE").into());
+    }
+    if let Some(artist) = &media.artist {
+        ui.set_media_artist(artist.into());
+    } else {
+        ui.set_media_title(String::from("UNKNOWN ARTIST").into());
     }
 }
