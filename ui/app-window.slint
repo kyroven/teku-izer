@@ -277,6 +277,7 @@ export component MainWindow inherits Window {
     callback play_button();
     callback file_button();
     callback change_volume();
+    callback seek_press();
     callback seek(int);
 
     in property <bool> media_playing: false;
@@ -305,6 +306,7 @@ export component MainWindow inherits Window {
         total_duration: root.total_duration;
         resume_update_flag: root.resume_update_flag;
         change_volume(level) => { root.volume_level = level; root.change_volume() }
+        seek_press() => { root.seek_press() }
         seek(time) => { root.seek(time) }
     }
 

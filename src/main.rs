@@ -168,9 +168,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
+    ui.on_seek_press({
+        let time_update_handle = Arc::clone(&current_time_update);
+        move || {
+            time_update_handle.stop();
+    }});
+
     ui.on_seek({
         let time_update_handle = Arc::clone(&current_time_update);
-        time_update_handle.stop();
+        // time_update_handle.stop();
         let player_handle = Arc::clone(&audio_player);
         let ui_handle = ui.as_weak();
         move |time| {

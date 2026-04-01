@@ -14,6 +14,7 @@ component SeekBar {
     in property <int> resume_update_flag;
 
     callback seek(int);
+    callback press();
 
     function format_time(time: int) -> string {
         let time_as_secs = (time / 1000).floor();
@@ -25,7 +26,7 @@ component SeekBar {
         return "\{mins}:\{secs}";
     }
 
-    changed resume_update_flag => {
+    changed current_time => {
         slider.value = self.current_time;
     }
 
@@ -44,6 +45,7 @@ component SeekBar {
             maximum: root.total_duration;
             width: clamp(root.available_space, 100px, 400px);
             value: root.current_time;
+            changed => { root.press() }
             released(val) => { root.seek(val) }
         }
 
@@ -65,6 +67,7 @@ export component PlayBar inherits Rectangle {
 
     callback play_button();
     callback change_volume(float);
+    callback seek_press();
     callback seek(int);
 
     in property <bool> playing;
@@ -154,6 +157,7 @@ export component PlayBar inherits Rectangle {
         font-family: root.font-family;
         x: ((parent.width / 2) - (self.width / 2));
         y: ((parent.height * 0.75) - (self.height / 2));
+        press() => { root.seek_press() }
         seek(val) => { root.seek(val); }
     }
 }
