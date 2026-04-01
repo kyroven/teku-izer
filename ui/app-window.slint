@@ -5,7 +5,7 @@ import "fonts/Orbitron-ExtraBold.ttf";
 
 import { Palette } from "palette.slint";
 import { PlayBar } from "playbar.slint";
-import { MenuBar } from "menubar.slint";
+import { CustomMenuBar } from "menubar.slint";
 
 export component MainWindow inherits Window {
     preferred-width: 800px;
@@ -33,8 +33,8 @@ export component MainWindow inherits Window {
     in property <int> total_duration: 0;
     in property <int> resume_update_flag: 0;
 
-    menubar := MenuBar {
-        set_width: root.width;
+    menubar := CustomMenuBar {
+        // width: root.width;
         file_button => { root.file_button() }
     }
 
@@ -59,6 +59,10 @@ export component MainWindow inherits Window {
         height: (root.height - menubar.height - playbar.height);
         x: 0;
         y: menubar.height;
-        Image { source: @image-url("images/Background Teku.png"); }
+        Image {
+            source: @image-url("images/Background Teku.png");
+            width: parent.width;
+            height: parent.height;
+        }
     }
 }

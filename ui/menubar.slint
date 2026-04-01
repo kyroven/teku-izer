@@ -3,17 +3,19 @@ import "fonts/Orbitron-VariableFont_wght.ttf";
 import "fonts/Orbitron-Bold.ttf";
 import "fonts/Orbitron-ExtraBold.ttf";
 
-export component MenuBar inherits Rectangle {
+export component CustomMenuBar inherits Rectangle {
     // background: #ABCCD2;
     background: @linear-gradient(180deg, #C5EAEC 0%, #819C9C 50%, #484F51 100%);
-    in property <length> set_width: 800px;
-    width: self.set_width;
+    min-width: 800px;
+    // preferred-width: 800px;
     height: 60px;
     x: 0px;
     y: 0px;
 
+    in property <length> font-size: 12px;
+    in property <length> label-padding: (self.font-size * 1.5);
+
     callback file_button();
-    in property <int> test_counter;
     
     HorizontalLayout {
         padding-left: 15px;
@@ -38,8 +40,8 @@ export component MenuBar inherits Rectangle {
                     Image {
                         source: @image-url("icons/home.svg");
                         colorize: @linear-gradient(180deg, #D2F6F7 0%, #B6D8D9 50%, #484F51 100%);
-                        width: (root.height * 0.9);
-                        height: (root.height * 0.9);
+                        width: (parent.height * 0.9);
+                        height: (parent.height * 0.9);
                     }
                     TouchArea {
                         mouse-cursor: pointer;
@@ -52,13 +54,14 @@ export component MenuBar inherits Rectangle {
             background: #28373B;
             height: (root.height * 0.3);
             y: ((root.height - self.height) / 2);
-            width: 100px;
+            min-width: 15px;
+            max-width: 150px;
             z: -1.0;
         }
 
         buttons := Rectangle {
             background: #28373B;
-            width: (root.width * 0.75);
+            width: clamp((root.width * 0.75), buttons_layout.min-width, 800px);
             height: (root.height * 0.75);
             y: ((root.height - self.height) / 2);
             border-top-left-radius: (self.height / 2);
@@ -66,7 +69,7 @@ export component MenuBar inherits Rectangle {
             border-top-right-radius: (self.height / 2);
             border-bottom-right-radius: (self.height / 2);
 
-            HorizontalLayout {
+            buttons_layout := HorizontalLayout {
                 padding: 2px;
                 spacing: 2px;
 
@@ -74,11 +77,13 @@ export component MenuBar inherits Rectangle {
                     background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
                     border-top-left-radius: (self.height / 2);
                     border-bottom-left-radius: (self.height / 2);
-                    Text {
+                    min-width: (file_label.width + root.label-padding);
+                    file_label := Text {
                         color: white;
                         text: "FILE";
                         font-weight: 700;
                         font-family: "Orbitron";
+                        font-size: root.font-size;
                     }
                     TouchArea {
                         mouse-cursor: pointer;
@@ -91,11 +96,13 @@ export component MenuBar inherits Rectangle {
                 preferences := Rectangle {
                     background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
                     height: (parent.height * 0.95);
-                    Text {
+                    min-width: (pref_label.width + root.label-padding);
+                    pref_label := Text {
                         color: white;
                         text: "PREFERENCES";
                         font-weight: 800;
                         font-family: "Orbitron";
+                        font-size: root.font-size;
                     }
                     TouchArea {
                         mouse-cursor: pointer;
@@ -105,11 +112,13 @@ export component MenuBar inherits Rectangle {
                 capture-controls := Rectangle {
                     background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
                     height: (parent.height * 0.95);
-                    Text {
+                    min-width: (cap_label.width + root.label-padding);
+                    cap_label := Text {
                         color: white;
                         text: "CAPTURE CONTROLS";
                         font-weight: 850;
                         font-family: "Orbitron";
+                        font-size: root.font-size;
                     }
                     TouchArea {
                         mouse-cursor: pointer;
@@ -119,11 +128,13 @@ export component MenuBar inherits Rectangle {
                 video := Rectangle {
                     background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
                     height: (parent.height * 0.95);
-                    Text {
+                    min-width: (vid_label.width + root.label-padding);
+                    vid_label := Text {
                         color: white;
                         text: "VIDEO";
                         font-weight: 900;
                         font-family: "Orbitron";
+                        font-size: root.font-size;
                     }
                     TouchArea {
                         mouse-cursor: pointer;
@@ -135,11 +146,13 @@ export component MenuBar inherits Rectangle {
                     height: (parent.height * 0.95);
                     border-top-right-radius: (self.height / 2);
                     border-bottom-right-radius: (self.height / 2);
-                    Text {
+                    min-width: (aud_label.width + root.label-padding);
+                    aud_label := Text {
                         color: white;
                         text: "AUDIO";
                         font-weight: 700;
                         font-family: "Orbitron";
+                        font-size: root.font-size;
                     }
                     TouchArea {
                         mouse-cursor: pointer;
