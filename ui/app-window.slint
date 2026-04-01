@@ -277,13 +277,16 @@ export component MainWindow inherits Window {
     callback play_button();
     callback file_button();
     callback change_volume();
+    callback seek(int);
+
     in property <bool> media_playing: false;
     in property <bool> file_selected: false;
     in property <string> media_title: "No Song Selected";
     in property <string> media_artist: "-----------";
     out property <float> volume_level: 1.0;
-    in property <int> current_time: 0;
+    in-out property <int> current_time: 0;
     in property <int> total_duration: 0;
+    in property <int> resume_update_flag: 0;
 
     MenuBar {
         width: parent.width;
@@ -298,9 +301,11 @@ export component MainWindow inherits Window {
         file_selected: root.file_selected;
         media_title: root.media_title;
         media_artist: media_artist;
-        current_time: root.current_time;
+        current_time <=> root.current_time;
         total_duration: root.total_duration;
+        resume_update_flag: root.resume_update_flag;
         change_volume(level) => { root.volume_level = level; root.change_volume() }
+        seek(time) => { root.seek(time) }
     }
 
 }

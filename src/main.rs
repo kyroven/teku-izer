@@ -9,7 +9,8 @@ use std::fs::File;
 use std::time::Duration;
 
 use rfd::{AsyncFileDialog, FileHandle};
-use rodio::{Decoder, Source};
+use rodio::{Decoder, decoder::DecoderBuilder, Source};
+use slint::{Timer, TimerMode};
 
 slint::include_modules!();
 
@@ -48,8 +49,13 @@ impl Media {
 
     fn create_source(&self) -> Result<Decoder<BufReader<File>>, <Decoder<BufReader<File>> as TryFrom<BufReader<File>>>::Error> {
         let file = File::open(self.path()).unwrap();
+        let len = file.metadata().unwrap().len();
         let buf = BufReader::new(file);
-        Decoder::try_from(buf)
+        let decoder = DecoderBuilder::new()
+            .with_data(buf)
+            .with_byte_len(len)
+            .build()?;
+        Ok(decoder)
     }
 }
 
@@ -73,8 +79,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let current_file: Arc<Mutex<Option<FileHandle>>> = Arc::new(Mutex::new(None));
     let current_media: Arc<Mutex<Option<Media>>> = Arc::new(Mutex::new(None));
+    let current_time_update = Arc::new(Timer::default());
 
-    let current_length: Arc<Mutex<Option<Duration>>> = Arc::new(Mutex::new(None));
+    // let current_length: Arc<Mutex<Option<Duration>>> = Arc::new(Mutex::new(None));
 
     let audio_sink_handle = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
@@ -108,11 +115,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     ui.on_file_button({
         let ui_handle = ui.as_weak();
         let audio_player = Arc::clone(&audio_player);
+        let current_media_handle = Arc::clone(&current_media);
+        current_time_update.start(TimerMode::Repeated, Duration::from_millis(50), {
+            let ui_handle = ui.as_weak();
+            let player_handle = Arc::clone(&audio_player);
+            move || {
+                let ui = ui_handle.unwrap();
+                if ui.get_media_playing() {
+                    println!("--------------");
+                    println!("current time: {}", ui.get_current_time());
+                    let pos = player_handle.get_pos().as_millis() as i32;
+                    ui.set_current_time(player_handle.get_pos().as_millis() as i32);
+                    println!("current_time_update: {pos}");
+                }
+        }});
         move || {
             let current_file_handle = Arc::clone(&current_file);
-            let current_media_handle = Arc::clone(&current_media);
             let ui = ui_handle.unwrap();
             let audio_player_handle = Arc::clone(&audio_player);
+            let current_media_handle = Arc::clone(&current_media_handle);
             slint::spawn_local(async move {
                 let file = AsyncFileDialog::new()
                     .add_filter("audio", &["ogg", "wav", "flac", "mp3"])
@@ -146,6 +167,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             audio_player_handle.set_volume(ui.get_volume_level());
         }
     });
+
+    ui.on_seek({
+        let time_update_handle = Arc::clone(&current_time_update);
+        time_update_handle.stop();
+        let player_handle = Arc::clone(&audio_player);
+        let ui_handle = ui.as_weak();
+        move |time| {
+            let ui = ui_handle.unwrap();
+            player_handle.try_seek(Duration::from_millis(time.try_into().unwrap())).unwrap();
+            time_update_handle.restart();
+            let last = ui.get_resume_update_flag();
+            ui.set_resume_update_flag(last + 1);
+    }});
     
     ui.run()?;
     

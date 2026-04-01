@@ -11,12 +11,22 @@ component SeekBar {
     in property <bool> file_selected: false;
     in property <length> available_space: 350px;
     in property <string> font-family: "Orbitron";
+    in property <int> resume_update_flag;
+
+    callback seek(int);
 
     function format_time(time: int) -> string {
         let time_as_secs = (time / 1000).floor();
         let mins = (time_as_secs / 60).floor();
         let secs = (time_as_secs - (mins * 60));
+        if secs < 10 {
+            return "\{mins}:0\{secs}";
+        }
         return "\{mins}:\{secs}";
+    }
+
+    changed resume_update_flag => {
+        slider.value = self.current_time;
     }
 
     HorizontalLayout {
@@ -24,16 +34,17 @@ component SeekBar {
         
         current_label := Text {
             font-family: root.font-family;
-            text: root.file_selected ? "\{root.current_time}" : "--:--";
+            text: root.file_selected ? "\{root.format_time(root.current_time)}" : "--:--";
             color: Palette.accent-background;
         }
 
-        SlimSlider {
+        slider := SlimSlider {
             fill: Palette.secondary-accent-background;
             minimum: 0.0;
             maximum: root.total_duration;
             width: clamp(root.available_space, 100px, 400px);
             value: root.current_time;
+            released(val) => { root.seek(val) }
         }
 
         total_label := Text {
@@ -54,13 +65,16 @@ export component PlayBar inherits Rectangle {
 
     callback play_button();
     callback change_volume(float);
+    callback seek(int);
+
     in property <bool> playing;
     in property <bool> file_selected: false;
     in property <string> media_title: "NO SONG SELECTED";
     in property <string> media_artist: "-----------";
 
-    in property <int> current_time: 0;
+    in-out property <int> current_time: 0;
     in property <int> total_duration;
+    in property <int> resume_update_flag;
 
     Text {
         text: parent.media_title;
@@ -131,14 +145,16 @@ export component PlayBar inherits Rectangle {
         }
     }
 
-    SeekBar {
-        current_time: root.current_time;
+    seekbar := SeekBar {
+        current_time <=> root.current_time;
         total_duration: root.total_duration;
         file_selected: root.file_selected;
+        resume_update_flag: root.resume_update_flag;
 
         font-family: root.font-family;
         x: ((parent.width / 2) - (self.width / 2));
         y: ((parent.height * 0.75) - (self.height / 2));
+        seek(val) => { root.seek(val); }
     }
 }
 
