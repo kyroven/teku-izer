@@ -122,11 +122,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             move || {
                 let ui = ui_handle.unwrap();
                 if ui.get_media_playing() {
-                    println!("--------------");
-                    println!("current time: {}", ui.get_current_time());
+                    // println!("--------------");
+                    // println!("current time: {}", ui.get_current_time());
                     let pos = player_handle.get_pos().as_millis() as i32;
                     ui.set_current_time(player_handle.get_pos().as_millis() as i32);
-                    println!("current_time_update: {pos}");
+                    // println!("current_time_update: {pos}");
                 }
         }});
         move || {

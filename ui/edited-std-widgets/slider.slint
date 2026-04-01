@@ -2,7 +2,7 @@ import { FluentPalette } from "../slint-built-in/styling.slint";
 import { SliderBase } from "../slint-built-in/common/slider-base.slint";
 import { Palette } from "../palette.slint";
 
-export component SlimSlider {
+export component SlimSlider { 
     in property <Orientation> orientation <=> base.orientation;
     in property <float> maximum <=> base.maximum;
     in property <float> minimum <=> base.minimum;
@@ -38,9 +38,7 @@ export component SlimSlider {
 
     states [
         disabled when !root.enabled : {
-            track.background: FluentPalette.accent-disabled;
-            rail.background: FluentPalette.accent-disabled;
-            thumb.background: FluentPalette.accent-disabled;
+            track.background: FluentPalette.border;
         }
         pressed when base.handle-pressed : {
             thumb.width: 10px;

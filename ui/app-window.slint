@@ -1,267 +1,11 @@
-import { HorizontalBox, VerticalBox, Palette, Button } from "std-widgets.slint";
+import { HorizontalBox, VerticalBox, Button } from "std-widgets.slint";
 import "fonts/Orbitron-VariableFont_wght.ttf";
 import "fonts/Orbitron-Bold.ttf";
 import "fonts/Orbitron-ExtraBold.ttf";
 
-import { PlayBar } from "playbar.slint";
 import { Palette } from "palette.slint";
-
-// struct TileData {
-//     image: image,
-//     image_visible: bool,
-//     solved: bool,
-// }
-
-// component MemoryTile inherits Rectangle {
-//     callback clicked;
-//     in property <bool> open_curtain;
-//     in property <bool> solved;
-//     in property <image> icon;
-
-//     width: 64px;
-//     height: 64px;
-//     open-curtain: false;
-//     background: solved ? #34CE57 : #3960D5;
-//     animate background { duration: 800ms; }
-
-//     Image {
-//         source: icon;
-//         width: parent.width;
-//         height: parent.height;
-//     }
-
-//     Rectangle {
-//         background: #193076;
-//         x: 0px;
-//         width: open_curtain ? 0px : (parent.width / 2);
-//         height: parent.height;
-//         animate width { duration: 250ms; easing: ease-in; }
-//     }
-
-//     Rectangle {
-//         background: #193076;
-//         x: open_curtain ? parent.width : (parent.width / 2);
-//         width: open_curtain ? 0px : (parent.width / 2);
-//         height: parent.height;
-//         animate width { duration: 250ms; easing: ease-in; }
-//         animate x { duration: 250ms; easing: ease-in; }
-//     }
-
-//     TouchArea {
-//         clicked => {
-//             // Delegate to the user of this element
-//             root.clicked();
-//         }
-//     }
-// }
-
-component MenuBar inherits Rectangle {
-    // background: #ABCCD2;
-    background: @linear-gradient(180deg, #C5EAEC 0%, #819C9C 50%, #484F51 100%);
-    width: 800px;
-    height: 60px;
-    x: 0px;
-    y: 0px;
-
-    callback file_button();
-    in property <int> test_counter;
-    
-    HorizontalLayout {
-        padding-left: 15px;
-        padding-right: 15px;
-        spacing: -5px;
-
-        home := Rectangle {
-            background: #28373B;
-            width: (parent.height * 0.75);
-            height: (parent.height * 0.75);
-            y: ((parent.height - self.height) / 2);
-            border-radius: 25px;
-
-            HorizontalLayout {
-                padding: 2px;
-                Rectangle {
-                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
-                    // width: (parent.height * 0.75);
-                    // height: (parent.height * 0.75);
-                    y: ((parent.height - self.height) / 2);
-                    border-radius: 25px;
-                    Image {
-                        source: @image-url("icons/home.svg");
-                        colorize: @linear-gradient(180deg, #D2F6F7 0%, #B6D8D9 50%, #484F51 100%);
-                        width: (parent.height * 0.9);
-                        height: (parent.height * 0.9);
-                    }
-                    TouchArea {
-                        mouse-cursor: pointer;
-                    }
-                }
-            }
-        }
-
-        connecting := Rectangle {
-            background: #28373B;
-            height: (parent.height * 0.3);
-            y: ((parent.height - self.height) / 2);
-            width: 100px;
-            z: -1.0;
-        }
-
-        buttons := Rectangle {
-            background: #28373B;
-            width: (parent.width * 0.75);
-            height: (parent.height * 0.75);
-            y: ((parent.height - self.height) / 2);
-            border-top-left-radius: (self.height / 2);
-            border-bottom-left-radius: (self.height / 2);
-            border-top-right-radius: (self.height / 2);
-            border-bottom-right-radius: (self.height / 2);
-
-            HorizontalLayout {
-                padding: 2px;
-                spacing: 2px;
-
-                file := Rectangle {
-                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
-                    border-top-left-radius: (self.height / 2);
-                    border-bottom-left-radius: (self.height / 2);
-                    Text {
-                        color: white;
-                        text: "FILE";
-                        font-weight: 700;
-                        font-family: "Orbitron";
-                    }
-                    TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.file_button();
-                        }
-                    }
-                }
-
-                preferences := Rectangle {
-                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
-                    height: (parent.height * 0.95);
-                    Text {
-                        color: white;
-                        text: "PREFERENCES";
-                        font-weight: 800;
-                        font-family: "Orbitron";
-                    }
-                    TouchArea {
-                        mouse-cursor: pointer;
-                    }
-                }
-
-                capture-controls := Rectangle {
-                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
-                    height: (parent.height * 0.95);
-                    Text {
-                        color: white;
-                        text: "CAPTURE CONTROLS";
-                        font-weight: 850;
-                        font-family: "Orbitron";
-                    }
-                    TouchArea {
-                        mouse-cursor: pointer;
-                    }
-                }
-
-                video := Rectangle {
-                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
-                    height: (parent.height * 0.95);
-                    Text {
-                        color: white;
-                        text: "VIDEO";
-                        font-weight: 900;
-                        font-family: "Orbitron";
-                    }
-                    TouchArea {
-                        mouse-cursor: pointer;
-                    }
-                }
-
-                audio := Rectangle {
-                    background: @linear-gradient(180deg, #A5CDD3 0%, #273537 50%, #202F30 100%);
-                    height: (parent.height * 0.95);
-                    border-top-right-radius: (self.height / 2);
-                    border-bottom-right-radius: (self.height / 2);
-                    Text {
-                        color: white;
-                        text: "AUDIO";
-                        font-weight: 700;
-                        font-family: "Orbitron";
-                    }
-                    TouchArea {
-                        mouse-cursor: pointer;
-                    }
-                }
-            }
-        }
-    }
-
-}
-
-// component PlayBar inherits Rectangle {
-//     // background: #ABCCD2;
-//     background: #28373B;
-//     width: 512px;
-//     height: 60px;
-//     x: 0px;
-
-//     callback play_button();
-//     in property <bool> playing;
-//     in property <string> media_name: "NO SONG SELECTED";
-//     in property <string> media_artist: "-----------";
-
-//     Text {
-//         text: parent.media_name;
-//         x: 15px;
-//         y: 15px;
-//         font-family: "Orbitron";
-//         letter-spacing: 1px;
-//         color: parent.background.brighter(2.5);
-//     }
-
-//     Text {
-//         text: parent.media_artist;
-//         x: 15px;
-//         y: 30px;
-//         font-family: "Orbitron";
-//         color: parent.background.brighter(2.5);
-//     }
-
-//     Rectangle {
-//         background: #28373B;
-//         width: (parent.height * 0.75);
-//         height: (parent.height * 0.75);
-//         y: ((parent.height - self.height) / 2);
-//         border-radius: 25px;
-
-//         HorizontalLayout {
-//             padding: 2px;
-//             Rectangle {
-//                 background: #A5CDD3;
-//                 // width: (parent.height * 0.75);
-//                 // height: (parent.height * 0.75);
-//                 y: ((parent.height - self.height) / 2);
-//                 border-radius: 25px;
-//                 Image {
-//                     source: root.playing ? @image-url("icons/pause.svg") : @image-url("icons/play.svg");
-//                     colorize: #28373B;
-//                     width: (parent.height * 0.9);
-//                     height: (parent.height * 0.9);
-//                 }
-//                 TouchArea {
-//                     mouse-cursor: pointer;
-//                     clicked => {
-//                         root.play_button();
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+import { PlayBar } from "playbar.slint";
+import { MenuBar } from "menubar.slint";
 
 export component MainWindow inherits Window {
     preferred-width: 800px;
@@ -289,12 +33,12 @@ export component MainWindow inherits Window {
     in property <int> total_duration: 0;
     in property <int> resume_update_flag: 0;
 
-    MenuBar {
-        width: parent.width;
+    menubar := MenuBar {
+        set_width: root.width;
         file_button => { root.file_button() }
     }
 
-    PlayBar {
+    playbar := PlayBar {
         width: parent.width;
         y: (parent.height - self.height);
         play_button => { root.play_button() }
@@ -310,4 +54,11 @@ export component MainWindow inherits Window {
         seek(time) => { root.seek(time) }
     }
 
+    main_area := Rectangle {
+        width: root.width;
+        height: (root.height - menubar.height - playbar.height);
+        x: 0;
+        y: menubar.height;
+        Image { source: @image-url("images/Background Teku.png"); }
+    }
 }

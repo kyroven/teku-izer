@@ -41,6 +41,8 @@ component SeekBar {
 
         slider := SlimSlider {
             fill: Palette.secondary-accent-background;
+            enabled: root.file_selected;
+            // enabled: false;
             minimum: 0.0;
             maximum: root.total_duration;
             width: clamp(root.available_space, 100px, 400px);
@@ -98,15 +100,15 @@ export component PlayBar inherits Rectangle {
 
     play_button := Rectangle {
         background: #28373B;
-        width: (parent.height * 0.75);
+        width: (parent.height * 0.6);
         height: self.width;
-        y: ((parent.height - self.height) / 2);
+        y: ((parent.height / 2.75) - (self.height / 2));
         border-radius: 25px;
         animate width { duration: 50ms; }
 
         states [
             hover when ta.has-hover && !ta.pressed : {
-                play_button.width: (parent.height * 0.8);
+                play_button.width: (parent.height * 0.65);
             }
         ]
 
