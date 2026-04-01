@@ -31,6 +31,7 @@ component SeekBar {
     }
 
     HorizontalLayout {
+        max-width: root.width;
         spacing: 5px;
         
         current_label := Text {
@@ -64,24 +65,31 @@ component NowPlaying inherits Rectangle {
     in property <string> artist;
     in property <string> font-family;
     in property <color> font-colour;
-    
-    title := Text {
-        x: 0;
-        y: 0;
-        text: root.title;
-        font-family: root.font-family;
-        letter-spacing: 1px;
-        // color: root.background.brighter(2.5);
-        color: root.font-colour;
-    }
+    // width: layout
+    width: layout.preferred-width;
 
-    artist := Text {
-        text: root.artist;
-        x: 0;
-        y: 15px;
-        font-family: root.font-family;
-        // color: root.background.brighter(2.5);
-        color: root.font-colour;
+    layout := VerticalLayout {
+        padding: 15px;
+    
+        title := Text {
+            // x: 15px;
+            // y: 15px;
+            text: root.title;
+            font-family: root.font-family;
+            letter-spacing: 1px;
+            // color: root.background.brighter(2.5);
+            color: root.font-colour;
+        }
+
+        artist := Text {
+            text: root.artist;
+            // x: 15px;
+            // y: 30px;
+            font-family: root.font-family;
+            // color: root.background.brighter(2.5);
+            color: root.font-colour;
+        }
+
     }
 }
 
@@ -90,6 +98,7 @@ export component PlayBar inherits Rectangle {
     background: #28373B;
     preferred-width: 800px;
     height: 60px;
+    min-width: now_playing.width + seekbar.min-width + volume.width;
     // x: 0px;
     in property <string> font-family: "Orbitron";
 
@@ -107,13 +116,31 @@ export component PlayBar inherits Rectangle {
     in property <int> total_duration;
     in property <int> resume_update_flag;
 
-    NowPlaying {
-        x: 15px;
-        y: 15px;
+    now_playing := NowPlaying {
+        y: 0;
+        x: 0;
         title: root.media_title;
         artist: root.media_artist;
         font-family: root.font-family;
         font-colour: root.background.brighter(2.5);
+    }
+
+    volume := Rectangle {
+        width: volume_layout.preferred-width;
+        x: root.width - volume_layout.width;
+        volume_layout := HorizontalLayout {
+            padding: 15px;
+            volume_bar := SlimSlider {
+                fill : Palette.secondary-accent-background;
+                value: 1.0;
+                maximum: 1.0;
+                minimum: 0.0;
+                width: 100px;
+                changed(value) => {
+                    change_volume(value);
+                }
+            }
+        }
     }
 
     play_button := Rectangle {
@@ -154,22 +181,13 @@ export component PlayBar inherits Rectangle {
         }
     }
 
-    volume := HorizontalBox {
-        x: root.width - volume_bar.width - 20px;
-        volume_bar := SlimSlider {
-            fill : Palette.secondary-accent-background;
-            value: 1.0;
-            maximum: 1.0;
-            minimum: 0.0;
-            width: 100px;
-            changed(value) => {
-                change_volume(value);
-            }
-        }
-    }
+    function find_width_constraint() {
 
+    }
     seekbar := SeekBar {
-        width: clamp(root.width * 0.5, 100px, 350px);
+        // width: clamp(root.width * 0.5, root.width - now_playing.width - volume.width, 350px);
+        width: now_playing.width > volume.width ? ((root.width / 2) - now_playing.width) * 2 : ((root.width / 2) - volume.width) * 2;
+        min-width: 250px;
         x: ((parent.width / 2) - (self.width / 2));
         y: ((parent.height * 0.75) - (self.height / 2));
 
