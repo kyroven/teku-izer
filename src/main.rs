@@ -131,6 +131,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     };
                     audio_player_handle.clear();
                     audio_player_handle.append(source);
+                    ui.set_current_time(audio_player_handle.get_pos().as_millis() as i32);
                     // ui.set_media_artist()
                     ui.set_file_selected(true);
                 }
