@@ -59,10 +59,11 @@ export component MainWindow inherits Window {
         height: (root.height - menubar.height - playbar.height);
         x: 0;
         y: menubar.height;
+        clip: true;
         Image {
             source: @image-url("images/Background Teku.png");
-            width: parent.width;
-            height: parent.height;
+            // width: parent.width;
+            // height: parent.height;
         }
     }
 }
