@@ -6,6 +6,7 @@ import "fonts/Orbitron-ExtraBold.ttf";
 import { Palette } from "palette.slint";
 import { PlayBar } from "playbar.slint";
 import { CustomMenuBar } from "menubar.slint";
+import { MainPage } from "main-page.slint";
 
 export component MainWindow inherits Window {
     preferred-width: 800px;
@@ -17,6 +18,7 @@ export component MainWindow inherits Window {
     // default-font-family: "Orbitron";
     background: #000000;
     icon: @image-url("icons/teku blue white icon stretch 256.png");
+    title: "teku-izer";
 
     callback check_if_pair_solved();
     callback play_button();
@@ -34,37 +36,26 @@ export component MainWindow inherits Window {
     in property <int> total_duration: 0;
     in property <int> resume_update_flag: 0;
 
-    menubar := CustomMenuBar {
-        // width: root.width;
-        file_button => { root.file_button() }
-    }
+    VerticalLayout {
+        menubar := CustomMenuBar {
+            // width: root.width;
+            file_button => { root.file_button() }
+        }
 
-    playbar := PlayBar {
-        width: parent.width;
-        y: (parent.height - self.height);
-        play_button => { root.play_button() }
-        playing: root.media_playing;
-        file_selected: root.file_selected;
-        media_title: root.media_title;
-        media_artist: media_artist;
-        current_time <=> root.current_time;
-        total_duration: root.total_duration;
-        resume_update_flag: root.resume_update_flag;
-        change_volume(level) => { root.volume_level = level; root.change_volume() }
-        seek_press() => { root.seek_press() }
-        seek(time) => { root.seek(time) }
-    }
+        MainPage {
+            media_playing: root.media_playing;
+            file_selected: root.file_selected;
+            media_title: root.media_title;
+            media_artist: root.media_artist;
+            current_time <=> root.current_time;
+            total_duration: root.total_duration;
+            resume_update_flag: root.resume_update_flag;
+            volume_level: root.volume_level;
 
-    main_area := Rectangle {
-        width: root.width;
-        height: (root.height - menubar.height - playbar.height);
-        x: 0;
-        y: menubar.height;
-        clip: true;
-        Image {
-            source: @image-url("images/Background Teku.png");
-            // width: parent.width;
-            // height: parent.height;
+            play_button => { root.play_button() }
+            change_volume => { root.change_volume() }
+            seek_press => { root.seek_press() }
+            seek(time) => { root.seek(time) }
         }
     }
 }

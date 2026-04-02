@@ -1,0 +1,64 @@
+import "fonts/Orbitron-VariableFont_wght.ttf";
+import "fonts/Orbitron-Bold.ttf";
+import "fonts/Orbitron-ExtraBold.ttf";
+
+import { Palette } from "palette.slint";
+import { PlayBar } from "playbar.slint";
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export component MainPage {
+    // preferred-width: 800px;
+
+    in property <bool> media_playing;
+    in property <bool> file_selected;
+    in property <string> media_title;
+    in property <string> media_artist;
+    in-out property <int> current_time;
+    in property <int> total_duration;
+    in property <int> resume_update_flag;
+    in-out property <int> volume_level;
+
+    callback play_button();
+    callback change_volume();
+    callback seek_press();
+    callback seek(int);
+
+    HorizontalBox {
+        padding: 0px;
+        spacing: 0px;
+        VerticalBox {
+            padding: 0px;
+            spacing: 0px;
+
+            main_area := Rectangle {
+                preferred-height: 480px;
+                // width: root.width;
+                // height: (root.height - menubar.height - playbar.height);
+                // x: 0;
+                clip: true;
+                Image {
+                    source: @image-url("images/Background Teku.png");
+                    width: self.source.width * 0.5px;
+                    height: self.source.height * 0.5px;
+                    // width: parent.width;
+                    // height: parent.height;
+                }
+            }
+            playbar := PlayBar {
+                // width: parent.width;
+                // y: (parent.height - self.height);
+                play_button => { root.play_button() }
+                playing: root.media_playing;
+                file_selected: root.file_selected;
+                media_title: root.media_title;
+                media_artist: media_artist;
+                current_time <=> root.current_time;
+                total_duration: root.total_duration;
+                resume_update_flag: root.resume_update_flag;
+                change_volume(level) => { root.volume_level = level; root.change_volume() }
+                seek_press() => { root.seek_press() }
+                seek(time) => { root.seek(time) }
+            }
+        }
+    }
+}
