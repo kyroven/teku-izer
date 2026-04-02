@@ -50,10 +50,9 @@ export component MainWindow inherits Window {
             current_time <=> root.current_time;
             total_duration: root.total_duration;
             resume_update_flag: root.resume_update_flag;
-            volume_level: root.volume_level;
 
             play_button => { root.play_button() }
-            change_volume => { root.change_volume() }
+            change_volume(level) => { root.volume_level = level; root.change_volume() }
             seek_press => { root.seek_press() }
             seek(time) => { root.seek(time) }
         }

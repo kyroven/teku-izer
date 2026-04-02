@@ -16,10 +16,9 @@ export component MainPage {
     in-out property <int> current_time;
     in property <int> total_duration;
     in property <int> resume_update_flag;
-    in-out property <int> volume_level;
 
     callback play_button();
-    callback change_volume();
+    callback change_volume(float);
     callback seek_press();
     callback seek(int);
 
@@ -55,7 +54,7 @@ export component MainPage {
                 current_time <=> root.current_time;
                 total_duration: root.total_duration;
                 resume_update_flag: root.resume_update_flag;
-                change_volume(level) => { root.volume_level = level; root.change_volume() }
+                change_volume(level) => { root.change_volume(level) }
                 seek_press() => { root.seek_press() }
                 seek(time) => { root.seek(time) }
             }
