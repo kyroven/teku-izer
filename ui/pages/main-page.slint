@@ -16,6 +16,7 @@ export component MainPage {
     in-out property <int> current_time;
     in property <int> total_duration;
     in property <int> resume_update_flag;
+    in property <image> background_image;
 
     callback play_button();
     callback change_volume(float);
@@ -34,15 +35,15 @@ export component MainPage {
                 // width: root.width;
                 // height: (root.height - menubar.height - playbar.height);
                 // x: 0;
-                // clip: true;
-                // Image {
-                //     source: @image-url("../images/Background Teku.png");
-                //     width: self.source.width * 0.5px;
-                //     height: self.source.height * 0.5px;
-                //     // width: parent.width;
-                //     // height: parent.height;
-                // }
-                background: #562769;
+                clip: true;
+                Image {
+                    source: root.background_image;
+                    width: self.source.width * 0.5px;
+                    height: self.source.height * 0.5px;
+                    // width: parent.width;
+                    // height: parent.height;
+                }
+                // background: #562769;
             }
             
         }

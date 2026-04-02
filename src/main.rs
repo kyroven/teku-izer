@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use rfd::{AsyncFileDialog, FileHandle};
 use rodio::{Decoder, decoder::DecoderBuilder, Source};
-use slint::{Timer, TimerMode};
+use slint::{Timer, TimerMode, Image};
 
 slint::include_modules!();
 
@@ -88,6 +88,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let audio_player = Arc::new(rodio::Player::connect_new(&audio_sink.mixer()));
     
     let ui = MainWindow::new()?;
+
+    let mainpage_background = Image::load_from_path(&Path::new("ui/images/Background Teku.png")).unwrap();
+    ui.set_mainpage_background(mainpage_background);
 
     ui.on_play_button({
         let ui_handle = ui.as_weak();

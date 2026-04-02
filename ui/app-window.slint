@@ -27,6 +27,7 @@ export component MainWindow inherits Window {
     callback change_volume();
     callback seek_press();
     callback seek(int);
+    callback load_home();
 
     in property <bool> media_playing: false;
     in property <bool> file_selected: false;
@@ -36,6 +37,7 @@ export component MainWindow inherits Window {
     in-out property <int> current_time: 0;
     in property <int> total_duration: 0;
     in property <int> resume_update_flag: 0;
+    in property <image> mainpage_background;
 
     VerticalLayout {
         menubar := CustomMenuBar {
@@ -51,6 +53,7 @@ export component MainWindow inherits Window {
             current_time <=> root.current_time;
             total_duration: root.total_duration;
             resume_update_flag: root.resume_update_flag;
+            background_image: root.mainpage_background;
 
             play_button => { root.play_button() }
             change_volume(level) => { root.volume_level = level; root.change_volume() }
