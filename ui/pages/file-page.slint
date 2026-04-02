@@ -6,22 +6,8 @@ import { Palette } from "../palette.slint";
 import { PlayBar } from "../playbar.slint";
 import { VerticalBox, HorizontalBox } from "std-widgets.slint";
 
-export component MainPage {
-    // preferred-width: 800px;
-
-    in property <bool> media_playing;
-    in property <bool> file_selected;
-    in property <string> media_title;
-    in property <string> media_artist;
-    in-out property <int> current_time;
-    in property <int> total_duration;
-    in property <int> resume_update_flag;
-
-    callback play_button();
-    callback change_volume(float);
-    callback seek_press();
-    callback seek(int);
-
+export component FilePage {
+    
     HorizontalBox {
         padding: 0px;
         spacing: 0px;
@@ -34,22 +20,7 @@ export component MainPage {
                 // width: root.width;
                 // height: (root.height - menubar.height - playbar.height);
                 // x: 0;
-                background: #819C9C;
-            }
-            playbar := PlayBar {
-                // width: parent.width;
-                // y: (parent.height - self.height);
-                play_button => { root.play_button() }
-                playing: root.media_playing;
-                file_selected: root.file_selected;
-                media_title: root.media_title;
-                media_artist: media_artist;
-                current_time <=> root.current_time;
-                total_duration: root.total_duration;
-                resume_update_flag: root.resume_update_flag;
-                change_volume(level) => { root.change_volume(level) }
-                seek_press() => { root.seek_press() }
-                seek(time) => { root.seek(time) }
+                background: #273537;
             }
         }
     }

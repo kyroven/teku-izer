@@ -7,6 +7,7 @@ import { Palette } from "palette.slint";
 import { PlayBar } from "playbar.slint";
 import { CustomMenuBar } from "menubar.slint";
 import { MainPage } from "pages/main-page.slint";
+import { FilePage } from "pages/file-page.slint";
 
 export component MainWindow inherits Window {
     preferred-width: 800px;
@@ -56,6 +57,8 @@ export component MainWindow inherits Window {
             seek_press => { root.seek_press() }
             seek(time) => { root.seek(time) }
         }
+        if (menubar.current_page == 1) : FilePage {}
+        
         playbar := PlayBar {
             // width: parent.width;
             // y: (parent.height - self.height);
