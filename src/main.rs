@@ -80,14 +80,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     // to the ui and then be done with it?
     let _current_media: Arc<Mutex<Option<Media>>> = Arc::new(Mutex::new(None));
     let current_time_update = Arc::new(Timer::default());
+    let current_queue: Vec<Box<Path>> = Vec::new();
 
-    // let current_length: Arc<Mutex<Option<Duration>>> = Arc::new(Mutex::new(None));
 
-    let audio_sink_handle = rodio::DeviceSinkBuilder::open_default_sink()
+    let audio_sink = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
-    // let test_file = BufReader::new(File::open("examples/funky.wav").unwrap());
-    // let audio_player = Arc::new(rodio::play(&audio_sink_handle.mixer(), test_file).unwrap());
-    let audio_player = Arc::new(rodio::Player::connect_new(&audio_sink_handle.mixer()));
+    let audio_player = Arc::new(rodio::Player::connect_new(&audio_sink.mixer()));
     
     let ui = MainWindow::new()?;
 
@@ -203,4 +201,8 @@ fn set_metadata(ui: &MainWindow, media: &Media) {
     } else {
         ui.set_media_artist(String::from("UNKNOWN ARTIST").into());
     }
+}
+
+fn build_queue(folder_path: &Path) {
+
 }
