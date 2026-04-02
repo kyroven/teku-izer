@@ -1,9 +1,9 @@
-import "fonts/Orbitron-VariableFont_wght.ttf";
-import "fonts/Orbitron-Bold.ttf";
-import "fonts/Orbitron-ExtraBold.ttf";
+import "../fonts/Orbitron-VariableFont_wght.ttf";
+import "../fonts/Orbitron-Bold.ttf";
+import "../fonts/Orbitron-ExtraBold.ttf";
 
-import { Palette } from "palette.slint";
-import { PlayBar } from "playbar.slint";
+import { Palette } from "../palette.slint";
+import { PlayBar } from "../playbar.slint";
 import { VerticalBox, HorizontalBox } from "std-widgets.slint";
 
 export component MainPage {
@@ -34,14 +34,7 @@ export component MainPage {
                 // width: root.width;
                 // height: (root.height - menubar.height - playbar.height);
                 // x: 0;
-                clip: true;
-                Image {
-                    source: @image-url("images/Background Teku.png");
-                    width: self.source.width * 0.5px;
-                    height: self.source.height * 0.5px;
-                    // width: parent.width;
-                    // height: parent.height;
-                }
+                background: #819C9C;
             }
             playbar := PlayBar {
                 // width: parent.width;

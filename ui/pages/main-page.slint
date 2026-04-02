@@ -1,0 +1,49 @@
+import "../fonts/Orbitron-VariableFont_wght.ttf";
+import "../fonts/Orbitron-Bold.ttf";
+import "../fonts/Orbitron-ExtraBold.ttf";
+
+import { Palette } from "../palette.slint";
+import { PlayBar } from "../playbar.slint";
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export component MainPage {
+    // preferred-width: 800px;
+
+    in property <bool> media_playing;
+    in property <bool> file_selected;
+    in property <string> media_title;
+    in property <string> media_artist;
+    in-out property <int> current_time;
+    in property <int> total_duration;
+    in property <int> resume_update_flag;
+
+    callback play_button();
+    callback change_volume(float);
+    callback seek_press();
+    callback seek(int);
+
+    HorizontalBox {
+        padding: 0px;
+        spacing: 0px;
+        VerticalBox {
+            padding: 0px;
+            spacing: 0px;
+
+            main_area := Rectangle {
+                preferred-height: 480px;
+                // width: root.width;
+                // height: (root.height - menubar.height - playbar.height);
+                // x: 0;
+                clip: true;
+                Image {
+                    source: @image-url("../images/Background Teku.png");
+                    width: self.source.width * 0.5px;
+                    height: self.source.height * 0.5px;
+                    // width: parent.width;
+                    // height: parent.height;
+                }
+            }
+            
+        }
+    }
+}

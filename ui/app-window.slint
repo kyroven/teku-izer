@@ -6,7 +6,7 @@ import "fonts/Orbitron-ExtraBold.ttf";
 import { Palette } from "palette.slint";
 import { PlayBar } from "playbar.slint";
 import { CustomMenuBar } from "menubar.slint";
-import { MainPage } from "main-page.slint";
+import { MainPage } from "pages/main-page.slint";
 
 export component MainWindow inherits Window {
     preferred-width: 800px;
@@ -42,7 +42,7 @@ export component MainWindow inherits Window {
             file_button => { root.file_button() }
         }
 
-        MainPage {
+        if (menubar.current_page == 0) : MainPage {
             media_playing: root.media_playing;
             file_selected: root.file_selected;
             media_title: root.media_title;
@@ -54,6 +54,21 @@ export component MainWindow inherits Window {
             play_button => { root.play_button() }
             change_volume(level) => { root.volume_level = level; root.change_volume() }
             seek_press => { root.seek_press() }
+            seek(time) => { root.seek(time) }
+        }
+        playbar := PlayBar {
+            // width: parent.width;
+            // y: (parent.height - self.height);
+            play_button => { root.play_button() }
+            playing: root.media_playing;
+            file_selected: root.file_selected;
+            media_title: root.media_title;
+            media_artist: media_artist;
+            current_time <=> root.current_time;
+            total_duration: root.total_duration;
+            resume_update_flag: root.resume_update_flag;
+            change_volume(level) => { root.volume_level = level; root.change_volume() }
+            seek_press() => { root.seek_press() }
             seek(time) => { root.seek(time) }
         }
     }
