@@ -186,8 +186,14 @@ export component PlayBar inherits Rectangle {
     }
     seekbar := SeekBar {
         // width: clamp(root.width * 0.5, root.width - now_playing.width - volume.width, 350px);
-        width: now_playing.width > volume.width ? ((root.width / 2) - now_playing.width) * 2 : ((root.width / 2) - volume.width) * 2;
+        width: { if (now_playing.width > volume.width) {
+            clamp(((root.width / 2) - now_playing.width) * 2, 250px, 1000px)
+        } else {
+            clamp(((root.width / 2) - volume.width) * 2, 250px, 1000px)
+        }};
+        // width: now_playing.width > volume.width ? ((root.width / 2) - now_playing.width) * 2 : ((root.width / 2) - volume.width) * 2;
         min-width: 250px;
+        // max-width: 800px;
         x: ((parent.width / 2) - (self.width / 2));
         y: ((parent.height * 0.75) - (self.height / 2));
 
