@@ -1,0 +1,44 @@
+import { Palette } from "../palette.slint";
+
+export component PlayButton inherits Rectangle {
+    background: #28373B;
+    width: set-width;
+    height: self.width;
+    // y: ((parent.height / 2.75) - (self.height / 2));
+    border-radius: 25px;
+    animate width { duration: 50ms; }
+    in property <length> set-width: 36px;
+    in property <bool> enabled;
+    in property <bool> active;
+
+    callback clicked();
+
+    states [
+        hover when ta.has-hover && !ta.pressed : {
+            root.width: (set-width * 1.08);
+        }
+    ]
+
+    HorizontalLayout {
+        padding: 2px;
+        Rectangle {
+            background: root.enabled ? Palette.secondary-accent-background : #6f898d;
+            // width: (parent.height * 0.75);
+            // height: (parent.height * 0.75);
+            y: ((parent.height - self.height) / 2);
+            border-radius: 25px;
+            Image {
+                source: root.active ? @image-url("../icons/pause.svg") : @image-url("../icons/play.svg");
+                colorize: #28373B;
+                width: (parent.height * 0.9);
+                height: (parent.height * 0.9);
+            }
+            ta := TouchArea {
+                mouse-cursor: pointer;
+                clicked => {
+                    root.clicked();
+                }
+            }
+        }
+    }
+}

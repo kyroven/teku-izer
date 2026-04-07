@@ -24,6 +24,7 @@ export component MainWindow inherits Window {
     callback check_if_pair_solved();
     callback play_button();
     callback media_file_select();
+    callback media_folder_select();
     callback change_volume();
     callback seek_press();
     callback seek(int);
@@ -63,6 +64,7 @@ export component MainWindow inherits Window {
         if (menubar.current_page == 1) : FilePage {
             font-family: root.default-font-family;
             media_from_file => { root.media_file_select() }
+            media_from_folder => { root.media_folder_select() }
         }
         
         playbar := PlayBar {

@@ -1,0 +1,38 @@
+import { Palette } from "../palette.slint";
+
+export component SlimPlayButton inherits Rectangle {
+    // background: #28373B;
+    width: 36px;
+    height: self.width;
+    // y: ((parent.height / 2.75) - (self.height / 2));
+    border-radius: 25px;
+    in property <bool> enabled;
+    in property <bool> active;
+
+    callback clicked();
+
+    states [
+        hover when ta.has-hover : {
+            button.width: (root.width * 0.54);
+            button.height: (root.width * 0.54);
+        }
+    ]
+
+    button := Rectangle {
+        width: root.width * 0.5;
+        height: root.width * 0.5;
+        icon := Image {
+            source: root.active ? @image-url("../icons/pause-slim.svg") : @image-url("../icons/play-slim.svg");
+            colorize: root.enabled ? #445e65 : #6f898d;
+            width: (parent.height);
+            height: self.width;
+        }
+        ta := TouchArea {
+            enabled: true;
+            mouse-cursor: pointer;
+            clicked => {
+                root.clicked();
+            }
+        }
+    }
+}

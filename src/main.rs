@@ -2,9 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::io;
 use std::io::BufReader;
+use std::fs;
 use std::fs::File;
 use std::time::Duration;
 
@@ -15,16 +17,16 @@ use slint::{Timer, TimerMode, Image};
 slint::include_modules!();
 
 struct Media {
-    file: FileHandle,
+    path: PathBuf,
     title: Option<String>,
     artist: Option<String>,
     _source: Option<Decoder<BufReader<File>>>,
 }
 impl Media {
-    pub fn new(file: FileHandle) -> Self {
-        let (title, artist, _) = read_metadata(file.path());
+    pub fn new(path: &Path) -> Self {
+        let (title, artist, _) = read_metadata(path);
         Self {
-            file,
+            path: path.to_path_buf(),
             title,
             artist,
             _source: None,
@@ -32,7 +34,7 @@ impl Media {
     }
 
     pub fn path(&self) -> &Path {
-        self.file.path()
+        &self.path
     }
 
     // TODO do we need to save the source in the struct? we probably will only need it once
@@ -76,11 +78,12 @@ fn read_metadata(path: &Path) -> (Option<String>, Option<String>, Option<f64>) {
 fn main() -> Result<(), Box<dyn Error>> {
 
     let current_file: Arc<Mutex<Option<FileHandle>>> = Arc::new(Mutex::new(None));
+    let current_folder: Arc<Mutex<Option<FileHandle>>> = Arc::new(Mutex::new(None));
     // TODO do we actually need to save the current media like this? or can we just pass the info
     // to the ui and then be done with it?
     let _current_media: Arc<Mutex<Option<Media>>> = Arc::new(Mutex::new(None));
     let current_time_update = Arc::new(Timer::default());
-    let current_queue: Vec<Box<Path>> = Vec::new();
+    let current_queue: Arc<Mutex<Vec<Media>>> = Arc::new(Mutex::new(Vec::new()));
 
 
     let audio_sink = rodio::DeviceSinkBuilder::open_default_sink()
@@ -130,8 +133,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let ui_handle = ui.as_weak();
     let player_handle = Arc::clone(&audio_player);
+    let current_file_handle = Arc::clone(&current_file);
     ui.on_media_file_select(move || {
-        let current_file_handle = Arc::clone(&current_file);
+        let current_file_handle = Arc::clone(&current_file_handle);
         let ui = ui_handle.unwrap();
         let player_handle = Arc::clone(&player_handle);
         slint::spawn_local(async move {
@@ -143,7 +147,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             if let Some(handle) = file {
                 let mut current_file = current_file_handle.lock().unwrap();
                 *current_file = Some(handle.clone());
-                let new_media = Media::new(handle);
+                let new_media = Media::new(handle.path());
                 set_metadata(&ui, &new_media);
                 let source = new_media.create_source().unwrap();
                 if let Some(duration) = source.total_duration() {
@@ -154,6 +158,31 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ui.set_current_time(player_handle.get_pos().as_millis() as i32);
                 // ui.set_media_artist()
                 ui.set_file_selected(true);
+            }
+        }).unwrap();
+    });
+
+    let ui_handle = ui.as_weak();
+    let player_handle = Arc::clone(&audio_player);
+    let current_folder_handle = Arc::clone(&current_folder);
+    let current_queue_handle = Arc::clone(&current_queue);
+    ui.on_media_folder_select(move || {
+        let ui = ui_handle.unwrap();
+        let player_handle = Arc::clone(&player_handle);
+        let current_folder_handle = Arc::clone(&current_folder_handle);
+        let current_queue_handle = Arc::clone(&current_queue_handle);
+        slint::spawn_local(async move {
+            let folder = AsyncFileDialog::new()
+                // .add_filter("folder", &["ogg", "wav", "flac", "mp3"])
+                .set_directory("/")
+                .pick_folder()
+                .await;
+            if let Some(handle) = folder {
+                let mut current_folder = current_folder_handle.lock().unwrap();
+                *current_folder = Some(handle.clone());
+                let queue = build_queue(handle.path()).unwrap();
+                let mut current_queue = current_queue_handle.lock().unwrap();
+                *current_queue = queue;
             }
         }).unwrap();
     });
@@ -206,6 +235,17 @@ fn set_metadata(ui: &MainWindow, media: &Media) {
     }
 }
 
-fn build_queue(folder_path: &Path) {
+fn build_queue(dir: &Path) -> io::Result<Vec<Media>> {
+    let mut queue = Vec::new();
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            queue.append(&mut build_queue(&path)?);
+        } else {
+            queue.push(Media::new(&path));
+        }
+    }
 
+    Ok(queue)
 }

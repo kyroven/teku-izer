@@ -5,13 +5,81 @@ import "../fonts/Orbitron-ExtraBold.ttf";
 import { Palette } from "../palette.slint";
 import { PlayBar } from "../playbar.slint";
 import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { SlimPlayButton } from "../widgets/slim-play-button.slint";
+
+struct MediaData {
+    title: string,
+    artist: string,
+}
+
+component MediaListItem inherits Rectangle {
+    height: 40px;
+    // width: 400px;
+    background: @linear-gradient(180deg, #C5EAEC.darker(1) 0%, #819C9C 50%, #484F51 100%);
+
+    in property <string> font-family: "Orbitron";
+    in property <string> title: "Unknown Track";
+    in property <string> artist: "Unknown Artist";
+    in property <string> album: "------------";
+    in property <image> album-art: @image-url("../icons/default album art.svg");
+
+    play-button := SlimPlayButton {
+        x: 8px;
+        width: 60px * 0.6;
+        enabled: true;
+    }
+
+    album-art := Rectangle {
+        x: 45px;
+        width: 40px;
+        height: 40px;
+        border-radius: 5px;
+        background: #41585c;
+        clip: true;
+        Image {
+            source: root.album-art;
+            width: 40px;
+            height: 40px;
+        }
+    }
+        
+    title := Text {
+        x: 100px;
+        y: (parent.height / 2 - self.height);
+        text: parent.title;
+        font-family: parent.font-family;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+    }
+
+    artist := Text {
+        x: title.x;
+        y: (parent.height / 2);
+        text: parent.artist;
+        font-family: parent.font-family;
+    }
+
+    album := Text {
+        x: 250px;
+        y: (parent.height / 2 - self.height / 2);
+        text: parent.album;
+        font-family: parent.font-family;
+    }
+}
 
 export component FilePage inherits Rectangle {
-    background: #273537;
+    // background: #273537;
+    background: Palette.foreground-gradient;
 
     in property <string> font-family: "Orbitron";
 
     callback media_from_file();
+    callback media_from_folder();
+
+    in property <[MediaData]> media_list: [
+        { },
+        { },
+    ];
 
     VerticalLayout {
         tool-bar := HorizontalLayout {
@@ -36,7 +104,7 @@ export component FilePage inherits Rectangle {
             folder-button := Rectangle {
                 TouchArea {
                     mouse-cursor: pointer;
-                    clicked => { root.media_from_file() }
+                    clicked => { root.media_from_folder() }
                 }
                 HorizontalBox {
                     Image { 
@@ -47,11 +115,36 @@ export component FilePage inherits Rectangle {
                 }
             }
         }
-        main_area := Rectangle {
-            preferred-height: 480px;
-            // width: root.width;
-            // height: (root.height - menubar.height - playbar.height);
-            // x: 0;
+        main-area := Rectangle {
+            // background: Palette.foreground-gradient;
+            media-list-area := Rectangle {
+                x: 50px;
+                y: 15px;
+                background: #273537;
+                preferred-height: 480px;
+                border-radius: 10px;
+                clip: true;
+                if (media_list.length < 1) : Rectangle { 
+                    Text {
+                        text: "Track List Empty";
+                        font-family: root.font-family;
+                        letter-spacing: 0.5px;
+                        color: media-list-area.background.brighter(1.5);
+                        y: (parent.height / 2 - self.height);
+                    }
+                    Text {
+                        text: "Select your music folder > Select Media Folder";
+                        font-family: root.font-family;
+                        letter-spacing: 0.5px;
+                        color: media-list-area.background.brighter(1.5);
+                        y: (parent.height / 2);
+                    }
+                }
+                for media[i] in media_list : MediaListItem {
+                    y: i * 58px;
+                    height: 55px;
+                }
+            }
         }
     }
 }
