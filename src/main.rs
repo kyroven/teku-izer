@@ -136,7 +136,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         move || {
             let ui = ui_handle.unwrap();
 
-            if current_file_handle.lock().unwrap().is_some() {
+            if !player_handle.empty() {
                 if !player_handle.is_paused() {
                     player_handle.pause();
                     ui.set_media_playing(false);
@@ -206,16 +206,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let media_list: Vec<MediaData> = queue_model_handle.iter().collect();
         let target = &current_queue_handle.borrow()[idx as usize];
         
-        set_metadata(&ui, &target);
-        let source = target.create_source().unwrap();
-        if let Some(duration) = source.total_duration() {
-            ui.set_total_duration(duration.as_millis() as i32);
-        };
-        player_handle.clear();
-        player_handle.append(source);
-        ui.set_current_time(player_handle.get_pos().as_millis() as i32);
-        // ui.set_media_artist()
-        ui.set_file_selected(true);
+        start_playback(&ui, target, player_handle.clone());
     });
 
     let ui_handle = ui.as_weak();
@@ -322,4 +313,18 @@ fn build_queue(dir: &Path) -> io::Result<Vec<Media>> {
     }
 
     Ok(queue)
+}
+
+fn start_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>) {
+    set_metadata(&ui, media);
+    let source = media.create_source().unwrap();
+    if let Some(duration) = source.total_duration() {
+        ui.set_total_duration(duration.as_millis() as i32);
+    };
+    player.clear();
+    player.append(source);
+    ui.set_current_time(player.get_pos().as_millis() as i32);
+    ui.set_file_selected(true);
+    player.play();
+    ui.set_media_playing(true);
 }
