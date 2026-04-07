@@ -5,6 +5,7 @@ use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
+use std::cell::RefCell;
 use std::io;
 use std::io::BufReader;
 use std::fs;
@@ -113,7 +114,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // to the ui and then be done with it?
     let _current_media: Arc<Mutex<Option<Media>>> = Arc::new(Mutex::new(None));
     let current_time_update = Arc::new(Timer::default());
-    let current_queue: Arc<Mutex<Vec<Media>>> = Arc::new(Mutex::new(Vec::new()));     
+    let current_queue: Rc<RefCell<Vec<Media>>> = Rc::new(RefCell::new(Vec::new()));
 
     let audio_sink = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
@@ -121,14 +122,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let ui = MainWindow::new()?;
 
-    let mut queue: Vec<MediaData> = ui.get_media_list().iter().collect();
+    let queue: Vec<MediaData> = ui.get_media_list().iter().collect();
     let queue_model = Rc::new(slint::VecModel::from(queue));
     ui.set_media_list(queue_model.clone().into());
 
     let mainpage_background = Image::load_from_path(&Path::new("ui/images/Background Teku.png")).unwrap();
     ui.set_mainpage_background(mainpage_background);
 
-    ui.on_play_button({
+    ui.on_toggle_play({
         let ui_handle = ui.as_weak();
         let current_file_handle = Arc::clone(&current_file);
         let player_handle = Arc::clone(&audio_player);
@@ -195,16 +196,40 @@ fn main() -> Result<(), Box<dyn Error>> {
         }).unwrap();
     });
 
+    let queue_model_handle = queue_model.clone();
+    let current_queue_handle = current_queue.clone();
+    let ui_handle = ui.as_weak();
+    let player_handle = Arc::clone(&audio_player);
+    ui.on_play_media(move |idx| {
+        let ui = ui_handle.unwrap();
+
+        let media_list: Vec<MediaData> = queue_model_handle.iter().collect();
+        let target = &current_queue_handle.borrow()[idx as usize];
+        
+        set_metadata(&ui, &target);
+        let source = target.create_source().unwrap();
+        if let Some(duration) = source.total_duration() {
+            ui.set_total_duration(duration.as_millis() as i32);
+        };
+        player_handle.clear();
+        player_handle.append(source);
+        ui.set_current_time(player_handle.get_pos().as_millis() as i32);
+        // ui.set_media_artist()
+        ui.set_file_selected(true);
+    });
+
     let ui_handle = ui.as_weak();
     let player_handle = Arc::clone(&audio_player);
     let current_folder_handle = Arc::clone(&current_folder);
-    // let queue_handle = Rc::clone(&queue_model);
+    let queue_model_handle = queue_model.clone();
+    let current_queue_handle = current_queue.clone();
     ui.on_media_folder_select(move || {
         let ui = ui_handle.unwrap();
         let player_handle = Arc::clone(&player_handle);
         let current_folder_handle = Arc::clone(&current_folder_handle);
         // let current_queue_handle = Arc::clone(&current_queue_handle);
-        let queue_model = queue_model.clone();
+        let queue_model = queue_model_handle.clone();
+        let current_queue_handle = current_queue_handle.clone();
         slint::spawn_local(async move {
             let folder = AsyncFileDialog::new()
                 // .add_filter("folder", &["ogg", "wav", "flac", "mp3"])
@@ -216,7 +241,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 *current_folder = Some(handle.clone());
                 let queue = build_queue(handle.path()).unwrap();
                 let mut media_list: Vec<MediaData> = Vec::new();
-                for media in queue {
+                for media in &queue {
                     let mut model = MediaData::default();
                     model.title = slint::SharedString::from(media.title().unwrap_or("Unknown Title"));
                     model.artist = slint::SharedString::from(media.artist().unwrap_or("Unknown Artist"));
@@ -224,6 +249,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     println!("artist: {}", model.artist);
                     media_list.push(model);
                 }
+                *current_queue_handle.borrow_mut() = queue;
                 queue_model.set_vec(media_list);
             }
         }).unwrap();
@@ -296,9 +322,4 @@ fn build_queue(dir: &Path) -> io::Result<Vec<Media>> {
     }
 
     Ok(queue)
-}
-
-fn construct_queue_model(queue: &Vec<Media>) -> slint::VecModel<MediaData> {
-    // let queue_model = std::rc::Rc::new(slint::VecModel::from)
-    todo!()
 }
