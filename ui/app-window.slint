@@ -7,7 +7,7 @@ import { Palette } from "palette.slint";
 import { PlayBar } from "playbar.slint";
 import { CustomMenuBar } from "menubar.slint";
 import { MainPage } from "pages/main-page.slint";
-import { FilePage } from "pages/file-page.slint";
+import { FilePage, MediaData } from "pages/file-page.slint";
 
 export component MainWindow inherits Window {
     preferred-width: 800px;
@@ -20,9 +20,11 @@ export component MainWindow inherits Window {
     background: #000000;
     icon: @image-url("icons/teku blue white icon stretch 256.png");
     title: "teku-izer";
+    default-font-family: "Orbitron";
 
     callback check_if_pair_solved();
-    callback play_button();
+    callback play_media(int);
+    callback toggle_play();
     callback media_file_select();
     callback media_folder_select();
     callback change_volume();
@@ -40,6 +42,8 @@ export component MainWindow inherits Window {
     in property <int> resume_update_flag: 0;
     in property <image> mainpage_background;
 
+    in property <[MediaData]> media_list: [];
+
     VerticalLayout {
         menubar := CustomMenuBar {
             // width: root.width;
@@ -55,22 +59,19 @@ export component MainWindow inherits Window {
             total_duration: root.total_duration;
             resume_update_flag: root.resume_update_flag;
             background_image: root.mainpage_background;
-
-            play_button => { root.play_button() }
-            change_volume(level) => { root.volume_level = level; root.change_volume() }
-            seek_press => { root.seek_press() }
-            seek(time) => { root.seek(time) }
         }
         if (menubar.current_page == 1) : FilePage {
             font-family: root.default-font-family;
+            media_list: root.media_list;
             media_from_file => { root.media_file_select() }
             media_from_folder => { root.media_folder_select() }
+            play_media(i) => { root.play_media(i) }
         }
         
         playbar := PlayBar {
             // width: parent.width;
             // y: (parent.height - self.height);
-            play_button => { root.play_button() }
+            play_button => { root.toggle_play() }
             playing: root.media_playing;
             file_selected: root.file_selected;
             media_title: root.media_title;

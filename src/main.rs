@@ -3,18 +3,23 @@
 
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::io;
 use std::io::BufReader;
 use std::fs;
 use std::fs::File;
 use std::time::Duration;
+use std::fmt;
 
 use rfd::{AsyncFileDialog, FileHandle};
 use rodio::{Decoder, decoder::DecoderBuilder, Source};
-use slint::{Timer, TimerMode, Image};
+use slint::{Timer, TimerMode, Image, Model};
+use slint;
 
 slint::include_modules!();
+
+const SUPPORTED_FILE_TYPES: [&str; 4] = ["ogg", "wav", "mp3", "flac"];
 
 struct Media {
     path: PathBuf,
@@ -37,6 +42,22 @@ impl Media {
         &self.path
     }
 
+    pub fn title(&self) -> Option<&str> {
+        if let Some(s) = &self.title {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    pub fn artist(&self) -> Option<&str> {
+        if let Some(s) = &self.artist {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
     // TODO do we need to save the source in the struct? we probably will only need it once
     /// Moves `source` out of self if it already exists, otherwise creates and returns new `source`
     pub fn _source(&mut self) -> Result<Decoder<BufReader<File>>, <Decoder<BufReader<File>> as TryFrom<BufReader<File>>>::Error> {
@@ -57,6 +78,15 @@ impl Media {
             .with_byte_len(len)
             .build()?;
         Ok(decoder)
+    }
+}
+impl fmt::Debug for Media {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Media")
+         .field("path", &self.path)
+         .field("title", &self.title)
+         .field("artist", &self.artist)
+         .finish()
     }
 }
 
@@ -83,14 +113,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     // to the ui and then be done with it?
     let _current_media: Arc<Mutex<Option<Media>>> = Arc::new(Mutex::new(None));
     let current_time_update = Arc::new(Timer::default());
-    let current_queue: Arc<Mutex<Vec<Media>>> = Arc::new(Mutex::new(Vec::new()));
-
+    let current_queue: Arc<Mutex<Vec<Media>>> = Arc::new(Mutex::new(Vec::new()));     
 
     let audio_sink = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
     let audio_player = Arc::new(rodio::Player::connect_new(&audio_sink.mixer()));
     
     let ui = MainWindow::new()?;
+
+    let mut queue: Vec<MediaData> = ui.get_media_list().iter().collect();
+    let queue_model = Rc::new(slint::VecModel::from(queue));
+    ui.set_media_list(queue_model.clone().into());
 
     let mainpage_background = Image::load_from_path(&Path::new("ui/images/Background Teku.png")).unwrap();
     ui.set_mainpage_background(mainpage_background);
@@ -165,12 +198,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let ui_handle = ui.as_weak();
     let player_handle = Arc::clone(&audio_player);
     let current_folder_handle = Arc::clone(&current_folder);
-    let current_queue_handle = Arc::clone(&current_queue);
+    // let queue_handle = Rc::clone(&queue_model);
     ui.on_media_folder_select(move || {
         let ui = ui_handle.unwrap();
         let player_handle = Arc::clone(&player_handle);
         let current_folder_handle = Arc::clone(&current_folder_handle);
-        let current_queue_handle = Arc::clone(&current_queue_handle);
+        // let current_queue_handle = Arc::clone(&current_queue_handle);
+        let queue_model = queue_model.clone();
         slint::spawn_local(async move {
             let folder = AsyncFileDialog::new()
                 // .add_filter("folder", &["ogg", "wav", "flac", "mp3"])
@@ -181,8 +215,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let mut current_folder = current_folder_handle.lock().unwrap();
                 *current_folder = Some(handle.clone());
                 let queue = build_queue(handle.path()).unwrap();
-                let mut current_queue = current_queue_handle.lock().unwrap();
-                *current_queue = queue;
+                let mut media_list: Vec<MediaData> = Vec::new();
+                for media in queue {
+                    let mut model = MediaData::default();
+                    model.title = slint::SharedString::from(media.title().unwrap_or("Unknown Title"));
+                    model.artist = slint::SharedString::from(media.artist().unwrap_or("Unknown Artist"));
+                    println!("title: {}", model.title);
+                    println!("artist: {}", model.artist);
+                    media_list.push(model);
+                }
+                queue_model.set_vec(media_list);
             }
         }).unwrap();
     });
@@ -243,9 +285,20 @@ fn build_queue(dir: &Path) -> io::Result<Vec<Media>> {
         if path.is_dir() {
             queue.append(&mut build_queue(&path)?);
         } else {
-            queue.push(Media::new(&path));
+            if let Some(os_ext) = path.extension() {
+                if let Some(ext) = os_ext.to_str() {
+                    if SUPPORTED_FILE_TYPES.contains(&ext) {
+                        queue.push(Media::new(&path));
+                    }
+                }
+            }
         }
     }
 
     Ok(queue)
+}
+
+fn construct_queue_model(queue: &Vec<Media>) -> slint::VecModel<MediaData> {
+    // let queue_model = std::rc::Rc::new(slint::VecModel::from)
+    todo!()
 }

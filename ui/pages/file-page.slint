@@ -7,7 +7,7 @@ import { PlayBar } from "../playbar.slint";
 import { VerticalBox, HorizontalBox } from "std-widgets.slint";
 import { SlimPlayButton } from "../widgets/slim-play-button.slint";
 
-struct MediaData {
+export struct MediaData {
     title: string,
     artist: string,
 }
@@ -23,10 +23,13 @@ component MediaListItem inherits Rectangle {
     in property <string> album: "------------";
     in property <image> album-art: @image-url("../icons/default album art.svg");
 
+    callback play();
+
     play-button := SlimPlayButton {
         x: 8px;
         width: 60px * 0.6;
         enabled: true;
+        clicked => { root.play() }
     }
 
     album-art := Rectangle {
@@ -75,11 +78,9 @@ export component FilePage inherits Rectangle {
 
     callback media_from_file();
     callback media_from_folder();
+    callback play_media(int);
 
-    in property <[MediaData]> media_list: [
-        { },
-        { },
-    ];
+    in property <[MediaData]> media_list: [];
 
     VerticalLayout {
         tool-bar := HorizontalLayout {
@@ -143,6 +144,9 @@ export component FilePage inherits Rectangle {
                 for media[i] in media_list : MediaListItem {
                     y: i * 58px;
                     height: 55px;
+                    title: media.title;
+                    artist: media.artist;
+                    play => { root.play_media(i) }
                 }
             }
         }
