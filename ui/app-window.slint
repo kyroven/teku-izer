@@ -23,7 +23,7 @@ export component MainWindow inherits Window {
 
     callback check_if_pair_solved();
     callback play_button();
-    callback file_button();
+    callback media_file_select();
     callback change_volume();
     callback seek_press();
     callback seek(int);
@@ -42,7 +42,7 @@ export component MainWindow inherits Window {
     VerticalLayout {
         menubar := CustomMenuBar {
             // width: root.width;
-            file_button => { root.file_button() }
+            // file_button => { root.media_file_select() }
         }
 
         if (menubar.current_page == 0) : MainPage {
@@ -60,7 +60,10 @@ export component MainWindow inherits Window {
             seek_press => { root.seek_press() }
             seek(time) => { root.seek(time) }
         }
-        if (menubar.current_page == 1) : FilePage {}
+        if (menubar.current_page == 1) : FilePage {
+            font-family: root.default-font-family;
+            media_from_file => { root.media_file_select() }
+        }
         
         playbar := PlayBar {
             // width: parent.width;

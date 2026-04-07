@@ -6,22 +6,52 @@ import { Palette } from "../palette.slint";
 import { PlayBar } from "../playbar.slint";
 import { VerticalBox, HorizontalBox } from "std-widgets.slint";
 
-export component FilePage {
-    
-    HorizontalBox {
-        padding: 0px;
-        spacing: 0px;
-        VerticalBox {
-            padding: 0px;
-            spacing: 0px;
+export component FilePage inherits Rectangle {
+    background: #273537;
 
-            main_area := Rectangle {
-                preferred-height: 480px;
-                // width: root.width;
-                // height: (root.height - menubar.height - playbar.height);
-                // x: 0;
-                background: #273537;
+    in property <string> font-family: "Orbitron";
+
+    callback media_from_file();
+
+    VerticalLayout {
+        tool-bar := HorizontalLayout {
+            spacing: 5px;
+            height: 40px;
+            file-button := Rectangle {
+                TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.media_from_file() }
+                }
+                HorizontalBox {
+                    Image { 
+                        source: @image-url("../icons/folder.svg"); 
+                        // width: 15px;
+                    }
+                    Text {
+                        text: "Select Media From File"; font-family: root.font-family;
+                        y: 50px;
+                    }
+                }
             }
+            folder-button := Rectangle {
+                TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.media_from_file() }
+                }
+                HorizontalBox {
+                    Image { 
+                        source: @image-url("../icons/folder.svg"); 
+                        // width: 50px;
+                    }
+                    Text { text: "Select Media Folder"; font-family: root.font-family; }
+                }
+            }
+        }
+        main_area := Rectangle {
+            preferred-height: 480px;
+            // width: root.width;
+            // height: (root.height - menubar.height - playbar.height);
+            // x: 0;
         }
     }
 }

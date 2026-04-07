@@ -130,7 +130,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let ui_handle = ui.as_weak();
     let player_handle = Arc::clone(&audio_player);
-    ui.on_file_button(move || {
+    ui.on_media_file_select(move || {
         let current_file_handle = Arc::clone(&current_file);
         let ui = ui_handle.unwrap();
         let player_handle = Arc::clone(&player_handle);
