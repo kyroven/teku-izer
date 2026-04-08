@@ -10,6 +10,7 @@ import { SlimPlayButton } from "../widgets/slim-play-button.slint";
 export struct MediaData {
     title: string,
     artist: string,
+    playing: bool,
 }
 
 component MediaListItem inherits Rectangle {
@@ -22,6 +23,7 @@ component MediaListItem inherits Rectangle {
     in property <string> artist: "Unknown Artist";
     in property <string> album: "------------";
     in property <image> album-art: @image-url("../icons/default album art.svg");
+    in property <bool> playing;
 
     callback play();
 
@@ -29,6 +31,7 @@ component MediaListItem inherits Rectangle {
         x: 8px;
         width: 60px * 0.6;
         enabled: true;
+        active: parent.playing;
         clicked => { root.play() }
     }
 
@@ -146,6 +149,7 @@ export component FilePage inherits Rectangle {
                     height: 55px;
                     title: media.title;
                     artist: media.artist;
+                    playing: media.playing;
                     play => { root.play_media(i) }
                 }
             }

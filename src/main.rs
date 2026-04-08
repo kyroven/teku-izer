@@ -14,6 +14,7 @@ use std::time::Duration;
 use std::fmt;
 
 use rfd::{AsyncFileDialog, FileHandle};
+use rodio::source;
 use rodio::{Decoder, decoder::DecoderBuilder, Source};
 use slint::{Timer, TimerMode, Image, Model};
 use slint;
@@ -108,13 +109,16 @@ fn read_metadata(path: &Path) -> (Option<String>, Option<String>, Option<f64>) {
 
 fn main() -> Result<(), Box<dyn Error>> {
 
+    // TODO actually i don't think any of these need to be Arcs
+    // I thought slint::spawn_local spawned a new thread but it actually doesn't
     let current_file: Arc<Mutex<Option<FileHandle>>> = Arc::new(Mutex::new(None));
     let current_folder: Arc<Mutex<Option<FileHandle>>> = Arc::new(Mutex::new(None));
     // TODO do we actually need to save the current media like this? or can we just pass the info
-    // to the ui and then be done with it?
+    // to the ui and then be done with it?``
     let _current_media: Arc<Mutex<Option<Media>>> = Arc::new(Mutex::new(None));
     let current_time_update = Arc::new(Timer::default());
     let current_queue: Rc<RefCell<Vec<Media>>> = Rc::new(RefCell::new(Vec::new()));
+    let mut current_idx: i32 = 0;
 
     let audio_sink = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
@@ -202,11 +206,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let player_handle = Arc::clone(&audio_player);
     ui.on_play_media(move |idx| {
         let ui = ui_handle.unwrap();
+        current_idx = idx;
 
         let media_list: Vec<MediaData> = queue_model_handle.iter().collect();
+        let mut target_model = media_list[idx as usize].clone();
+        target_model.playing = true;
+        queue_model_handle.set_row_data(idx as usize, target_model);
         let target = &current_queue_handle.borrow()[idx as usize];
         
-        start_playback(&ui, target, player_handle.clone());
+        start_new_playback(&ui, target, player_handle.clone());
+        // load_next_media(player_handle.clone(), current_queue_handle.clone(), idx as usize, false);
     });
 
     let ui_handle = ui.as_weak();
@@ -275,6 +284,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         let last = ui.get_resume_update_flag();
         ui.set_resume_update_flag(last + 1);
     });
+
+
+    let player_handle = Arc::clone(&audio_player);
+    let current_queue_handle = current_queue.clone();
+    let ui_handle = ui.as_weak();
+    ui.on_load_next_media(move || {
+        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), current_queue_handle.clone(), current_idx as usize, false);
+    });
     
     ui.run()?;
     
@@ -315,7 +332,7 @@ fn build_queue(dir: &Path) -> io::Result<Vec<Media>> {
     Ok(queue)
 }
 
-fn start_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>) {
+fn start_new_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>) {
     set_metadata(&ui, media);
     let source = media.create_source().unwrap();
     if let Some(duration) = source.total_duration() {
@@ -323,8 +340,30 @@ fn start_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>) {
     };
     player.clear();
     player.append(source);
+    let ui_handle = ui.as_weak();
+    let track_finished_callback = source::EmptyCallback::new(Box::new(move || {
+        let ui_handle = ui_handle.clone();
+        slint::invoke_from_event_loop(move || {
+            ui_handle.unwrap().invoke_load_next_media();
+        }).unwrap();
+    }));
+    player.append(track_finished_callback);
     ui.set_current_time(player.get_pos().as_millis() as i32);
     ui.set_file_selected(true);
     player.play();
     ui.set_media_playing(true);
+}
+
+fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>, current_idx: usize, repeat: bool) {
+    let queue = queue_handle.borrow();
+    if current_idx == (queue.len() - 1) && repeat {
+        let target_idx = 0;
+        let target = &queue[target_idx];
+        // player.append(target.create_source().unwrap());
+        start_new_playback(ui, target, player);
+    } else if current_idx < (queue.len() - 1) {
+        let target_idx = current_idx + 1;
+        let target = &queue[target_idx];
+        start_new_playback(ui, target, player);
+    }
 }
