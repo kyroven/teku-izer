@@ -204,9 +204,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let current_queue_handle = current_queue.clone();
     let ui_handle = ui.as_weak();
     let player_handle = Arc::clone(&audio_player);
+    // TODO will need to change this to a box and probably use refcell. it's just an int but it still
+    // is quite important to not run into a race condition with this value
+    let mut current_idx_handle = &mut current_idx;
     ui.on_play_media(move |idx| {
         let ui = ui_handle.unwrap();
-        current_idx = idx;
+        *current_idx_handle = idx;
 
         let media_list: Vec<MediaData> = queue_model_handle.iter().collect();
         let mut target_model = media_list[idx as usize].clone();
