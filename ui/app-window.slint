@@ -34,17 +34,21 @@ export component MainWindow inherits Window {
     callback load_home();
     callback load_next_media();
 
-    in property <bool> media_playing: false;
     in property <bool> file_selected: false;
+    in property <bool> media_playing: false;
+    
+    in property <[MediaData]> media_list: [];
+    in property <int> current_index: 0;
+
     in property <string> media_title: "No Song Selected";
     in property <string> media_artist: "-----------";
+    
     out property <float> volume_level: 1.0;
     in-out property <int> current_time: 0;
     in property <int> total_duration: 0;
     in property <int> resume_update_flag: 0;
-    in property <image> mainpage_background;
 
-    in property <[MediaData]> media_list: [];
+    in property <image> mainpage_background;
 
     VerticalLayout {
         menubar := CustomMenuBar {

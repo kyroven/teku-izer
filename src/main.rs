@@ -118,7 +118,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let _current_media: Arc<Mutex<Option<Media>>> = Arc::new(Mutex::new(None));
     let current_time_update = Arc::new(Timer::default());
     let current_queue: Rc<RefCell<Vec<Media>>> = Rc::new(RefCell::new(Vec::new()));
-    let mut current_idx: i32 = 0;
 
     let audio_sink = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
@@ -206,10 +205,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let player_handle = Arc::clone(&audio_player);
     // TODO will need to change this to a box and probably use refcell. it's just an int but it still
     // is quite important to not run into a race condition with this value
-    let mut current_idx_handle = &mut current_idx;
+    // let mut current_idx_handle = &mut current_idx;
     ui.on_play_media(move |idx| {
         let ui = ui_handle.unwrap();
-        *current_idx_handle = idx;
+        ui.set_current_index(idx);
 
         let media_list: Vec<MediaData> = queue_model_handle.iter().collect();
         let mut target_model = media_list[idx as usize].clone();
@@ -293,7 +292,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let current_queue_handle = current_queue.clone();
     let ui_handle = ui.as_weak();
     ui.on_load_next_media(move || {
-        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), current_queue_handle.clone(), current_idx as usize, false);
+        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), current_queue_handle.clone(), false);
     });
     
     ui.run()?;
@@ -357,16 +356,19 @@ fn start_new_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>
     ui.set_media_playing(true);
 }
 
-fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>, current_idx: usize, repeat: bool) {
+fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>, repeat: bool) {
     let queue = queue_handle.borrow();
+    let current_idx = ui.get_current_index() as usize;
     if current_idx == (queue.len() - 1) && repeat {
         let target_idx = 0;
         let target = &queue[target_idx];
         // player.append(target.create_source().unwrap());
+        ui.set_current_index(target_idx as i32);
         start_new_playback(ui, target, player);
     } else if current_idx < (queue.len() - 1) {
         let target_idx = current_idx + 1;
         let target = &queue[target_idx];
+        ui.set_current_index(target_idx as i32);
         start_new_playback(ui, target, player);
     }
 }
