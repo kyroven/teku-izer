@@ -118,7 +118,7 @@ export component PlayBar inherits Rectangle {
     in property <int> total_duration;
     in property <int> resume_update_flag;
 
-    out property <RepeatMode> repeat_mode;
+    out property <RepeatMode> repeat_mode: loop-button.repeat_mode;
 
     now_playing := NowPlaying {
         y: 0;
@@ -147,7 +147,7 @@ export component PlayBar inherits Rectangle {
         }
     }
 
-    play_button := Rectangle {
+    play-button := Rectangle {
         background: #28373B;
         width: (parent.height * 0.6);
         height: self.width;
@@ -156,8 +156,8 @@ export component PlayBar inherits Rectangle {
         animate width { duration: 50ms; }
 
         states [
-            hover when ta.has-hover && !ta.pressed : {
-                play_button.width: (parent.height * 0.65);
+            hover when play-ta.has-hover && !play-ta.pressed : {
+                play-button.width: (parent.height * 0.65);
             }
         ]
 
@@ -175,7 +175,7 @@ export component PlayBar inherits Rectangle {
                     width: (parent.height * 0.9);
                     height: (parent.height * 0.9);
                 }
-                ta := TouchArea {
+                play-ta := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
                         root.play_button();
@@ -186,18 +186,41 @@ export component PlayBar inherits Rectangle {
     }
 
     loop-button := Rectangle {
-        Image {
-            source: @image-url("icons/sync.svg");
-            colorize: Palette.secondary-accent-background;
-        }
-        loop-ta := TouchArea {
-            clicked => {
-                if (root.repeat_mode == RepeatMode.none) {
-                    root.repeat_mode = RepeatMode.all;
-                } else if (root.repeat_mode == RepeatMode.all) {
-                    root.repeat_mode = RepeatMode.single;
-                } else if (root.repeat_mode == RepeatMode.single) {
-                    root.repeat_mode = RepeatMode.none;
+        x: (parent.width / 2) + 50px;
+        y: ((parent.height / 2.75) - (self.height / 2));
+        width: loop-layout.preferred-width;
+        height: loop-layout.preferred-height;
+        out property <RepeatMode> repeat_mode: none;
+
+        states [
+            none when self.repeat_mode == RepeatMode.none : {
+                loop-icon.colorize: Palette.secondary-accent-background;
+            }
+            all when self.repeat_mode == RepeatMode.all : {
+                loop-icon.colorize: Palette.accent-background;
+            }
+            single when self.repeat_mode == RepeatMode.single : {
+                loop-icon.colorize: #FFFFFF;
+            }
+        ]
+
+        loop-layout := HorizontalLayout {
+            Rectangle {
+                loop-icon := Image {
+                    source: @image-url("icons/sync.svg");
+                    colorize: Palette.secondary-accent-background;
+                }
+                loop-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        if (loop-button.repeat_mode == RepeatMode.none) {
+                            loop-button.repeat_mode = RepeatMode.all;
+                        } else if (loop-button.repeat_mode == RepeatMode.all) {
+                            loop-button.repeat_mode = RepeatMode.single;
+                        } else if (loop-button.repeat_mode == RepeatMode.single) {
+                            loop-button.repeat_mode = RepeatMode.none;
+                        }
+                    }
                 }
             }
         }

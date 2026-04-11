@@ -41,7 +41,7 @@ export component MainWindow inherits Window {
     in property <[MediaData]> media_list: [];
     in property <int> current_index: 0;
     // 0 = no repeat; 1 = repeat all; 2 = repeat single
-    out property <RepeatMode> repeat_mode: none;
+    out property <RepeatMode> repeat_mode: playbar.repeat_mode;
 
     in property <string> media_title: "No Song Selected";
     in property <string> media_artist: "-----------";
@@ -81,13 +81,17 @@ export component MainWindow inherits Window {
             // width: parent.width;
             // y: (parent.height - self.height);
             play_button => { root.toggle_play() }
+
             playing: root.media_playing;
             file_selected: root.file_selected;
+
             media_title: root.media_title;
             media_artist: media_artist;
+
             current_time <=> root.current_time;
             total_duration: root.total_duration;
             resume_update_flag: root.resume_update_flag;
+
             change_volume(level) => { root.volume_level = level; root.change_volume() }
             seek_press() => { root.seek_press() }
             seek(time) => { root.seek(time) }
