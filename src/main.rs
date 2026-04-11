@@ -19,6 +19,7 @@ use rodio::{Decoder, decoder::DecoderBuilder, Source};
 use slint::{Timer, TimerMode, Image, Model};
 use slint;
 use rand::prelude::*;
+use directories::UserDirs;
 
 slint::include_modules!();
 
@@ -129,6 +130,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let queue: Vec<MediaData> = ui.get_media_list().iter().collect();
     let queue_model = Rc::new(slint::VecModel::from(queue));
     ui.set_media_list(queue_model.clone().into());
+    if let Some(user_dirs) = UserDirs::new() {
+        if let Some(path) = user_dirs.audio_dir() {
+            populate_queue_model(path, current_queue.clone(), queue_model.clone());
+        }
+    }
 
     let mainpage_background = Image::load_from_path(&Path::new("ui/images/Background Teku.png")).unwrap();
     ui.set_mainpage_background(mainpage_background);
@@ -242,18 +248,19 @@ fn main() -> Result<(), Box<dyn Error>> {
             if let Some(handle) = folder {
                 let mut current_folder = current_folder_handle.lock().unwrap();
                 *current_folder = Some(handle.clone());
-                let queue = build_queue(handle.path()).unwrap();
-                let mut media_list: Vec<MediaData> = Vec::new();
-                for media in &queue {
-                    let mut model = MediaData::default();
-                    model.title = slint::SharedString::from(media.title().unwrap_or("Unknown Title"));
-                    model.artist = slint::SharedString::from(media.artist().unwrap_or("Unknown Artist"));
-                    println!("title: {}", model.title);
-                    println!("artist: {}", model.artist);
-                    media_list.push(model);
-                }
-                *current_queue_handle.borrow_mut() = queue;
-                queue_model.set_vec(media_list);
+                populate_queue_model(handle.path(), current_queue_handle, queue_model);
+                // let queue = build_queue(handle.path()).unwrap();
+                // let mut media_list: Vec<MediaData> = Vec::new();
+                // for media in &queue {
+                //     let mut model = MediaData::default();
+                //     model.title = slint::SharedString::from(media.title().unwrap_or("Unknown Title"));
+                //     model.artist = slint::SharedString::from(media.artist().unwrap_or("Unknown Artist"));
+                //     println!("title: {}", model.title);
+                //     println!("artist: {}", model.artist);
+                //     media_list.push(model);
+                // }
+                // *current_queue_handle.borrow_mut() = queue;
+                // queue_model.set_vec(media_list);
             }
         }).unwrap();
     });
@@ -345,6 +352,21 @@ fn build_queue(dir: &Path) -> io::Result<Vec<Media>> {
     Ok(queue)
 }
 
+fn populate_queue_model(dir: &Path, current_queue: Rc<RefCell<Vec<Media>>>, queue_model: Rc<slint::VecModel<MediaData>>) {
+    let queue = build_queue(dir).unwrap();
+    let mut media_list: Vec<MediaData> = Vec::new();
+    for media in &queue {
+        let mut model = MediaData::default();
+        model.title = slint::SharedString::from(media.title().unwrap_or("Unknown Title"));
+        model.artist = slint::SharedString::from(media.artist().unwrap_or("Unknown Artist"));
+        println!("title: {}", model.title);
+        println!("artist: {}", model.artist);
+        media_list.push(model);
+    }
+    *current_queue.borrow_mut() = queue;
+    queue_model.set_vec(media_list);
+}
+
 fn start_new_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>) {
     set_metadata(&ui, media);
     let source = media.create_source().unwrap();
@@ -403,7 +425,6 @@ fn load_prev_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc
     let queue = queue_handle.borrow();
     let current_idx = ui.get_current_index() as usize;
     let do_shuffle = ui.get_shuffle_mode();
-    println!("do_shuffle: {do_shuffle}");
 
     // TODO Implement a smarter shuffle; look up Fisher-Yates shuffle
     if do_shuffle {
