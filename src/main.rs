@@ -217,13 +217,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         let ui = ui_handle.unwrap();
         ui.set_current_index(idx);
 
-        let media_list: Vec<MediaData> = queue_model_handle.iter().collect();
-        let mut target_model = media_list[idx as usize].clone();
-        target_model.playing = true;
-        queue_model_handle.set_row_data(idx as usize, target_model);
+        // let media_list: Vec<MediaData> = queue_model_handle.iter().collect();
+        // for (i, mut media) in queue_model_handle.iter().enumerate() {
+        //     media.playing = i == idx as usize;
+        //     queue_model_handle.set_row_data(i, media);
+        // }
+        // let mut target_model = media_list[idx as usize].clone();
+        // target_model.playing = true;
+        // for (idx, media) in media_list {
+            // queue_model_handle.set_row_data(idx as usize, target_model);
+        // }
         let target = &current_queue_handle.borrow()[idx as usize];
         
-        start_new_playback(&ui, target, player_handle.clone());
+        start_new_playback(&ui, queue_model_handle.clone(), target, player_handle.clone(), idx as usize);
         // load_next_media(player_handle.clone(), current_queue_handle.clone(), idx as usize, false);
     });
 
@@ -298,18 +304,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     let player_handle = Arc::clone(&audio_player);
     let queue_handle = current_queue.clone();
     let ui_handle = ui.as_weak();
+    let queue_model_handle = queue_model.clone();
     ui.on_load_next_media(move || {
-        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), queue_handle.clone());
+        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), queue_handle.clone(), queue_model_handle.clone());
     });
 
     let player_handle = Arc::clone(&audio_player);
     let queue_handle = current_queue.clone();
     let ui_handle = ui.as_weak();
+    let queue_model_handle = queue_model.clone();
     ui.on_rewind(move || {
         if player_handle.get_pos().as_millis() >= 2500 {
             player_handle.try_seek(Duration::ZERO).unwrap();
         } else {
-            load_prev_media(&ui_handle.clone().unwrap(), player_handle.clone(), queue_handle.clone());
+            load_prev_media(&ui_handle.clone().unwrap(), player_handle.clone(), queue_handle.clone(), queue_model_handle.clone());
         }
     });
     
@@ -367,7 +375,7 @@ fn populate_queue_model(dir: &Path, current_queue: Rc<RefCell<Vec<Media>>>, queu
     queue_model.set_vec(media_list);
 }
 
-fn start_new_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>) {
+fn start_new_playback(ui: &MainWindow, queue_model: Rc<slint::VecModel<MediaData>>, media: &Media, player: Arc<rodio::Player>, idx: usize) {
     set_metadata(&ui, media);
     let source = media.create_source().unwrap();
     if let Some(duration) = source.total_duration() {
@@ -387,9 +395,13 @@ fn start_new_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>
     ui.set_file_selected(true);
     player.play();
     ui.set_media_playing(true);
+    for (i, mut media) in queue_model.iter().enumerate() {
+        media.playing = i == idx as usize;
+        queue_model.set_row_data(i, media);
+    }
 }
 
-fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>) {
+fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>, queue_model: Rc<slint::VecModel<MediaData>>) {
     let queue = queue_handle.borrow();
     let current_idx = ui.get_current_index() as usize;
     let do_shuffle = ui.get_shuffle_mode();
@@ -404,7 +416,7 @@ fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc
 
         let target = &queue[*target_idx];
         ui.set_current_index(*target_idx as i32);
-        start_new_playback(ui, target, player);
+        start_new_playback(ui, queue_model, target, player, *target_idx);
     } else {
         let repeat_mode = ui.get_repeat_mode();
         let at_last_index = current_idx == (queue.len() - 1);
@@ -417,11 +429,11 @@ fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc
 
         let target = &queue[target_idx];
         ui.set_current_index(target_idx as i32);
-        start_new_playback(ui, target, player);
+        start_new_playback(ui, queue_model, target, player, target_idx);
     }
 }
 
-fn load_prev_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>) {
+fn load_prev_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>, queue_model: Rc<slint::VecModel<MediaData>>) {
     let queue = queue_handle.borrow();
     let current_idx = ui.get_current_index() as usize;
     let do_shuffle = ui.get_shuffle_mode();
@@ -435,7 +447,7 @@ fn load_prev_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc
 
         let target = &queue[*target_idx];
         ui.set_current_index(*target_idx as i32);
-        start_new_playback(ui, target, player);
+        start_new_playback(ui, queue_model, target, player, *target_idx);
     } else {
         let repeat_mode = ui.get_repeat_mode();
         let at_first_index = current_idx == 0;
@@ -448,6 +460,6 @@ fn load_prev_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc
 
         let target = &queue[target_idx];
         ui.set_current_index(target_idx as i32);
-        start_new_playback(ui, target, player);
+        start_new_playback(ui, queue_model, target, player, target_idx);
     }
 }
