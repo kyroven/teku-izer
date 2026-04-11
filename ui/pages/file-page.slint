@@ -4,7 +4,7 @@ import "../fonts/Orbitron-ExtraBold.ttf";
 
 import { Palette } from "../palette.slint";
 import { PlayBar } from "../playbar.slint";
-import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { VerticalBox, HorizontalBox, ScrollView } from "std-widgets.slint";
 import { SlimPlayButton } from "../widgets/slim-play-button.slint";
 
 export struct MediaData {
@@ -83,7 +83,19 @@ export component FilePage inherits Rectangle {
     callback media_from_folder();
     callback play_media(int);
 
-    in property <[MediaData]> media_list: [];
+    in property <[MediaData]> media_list: [
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {}
+    ];
 
     VerticalLayout {
         tool-bar := HorizontalLayout {
@@ -122,6 +134,7 @@ export component FilePage inherits Rectangle {
         main-area := Rectangle {
             // background: Palette.foreground-gradient;
             media-list-area := Rectangle {
+                width: parent.width - 50px;
                 x: 50px;
                 y: 15px;
                 background: #273537;
@@ -144,13 +157,29 @@ export component FilePage inherits Rectangle {
                         y: (parent.height / 2);
                     }
                 }
-                for media[i] in media_list : MediaListItem {
-                    y: i * 58px;
-                    height: 55px;
-                    title: media.title;
-                    artist: media.artist;
-                    playing: media.playing;
-                    play => { root.play_media(i) }
+                ScrollView {
+                    height: media-list-area.height - 15px;
+                    y: 0px;
+                    VerticalLayout {
+                        spacing: 3px;
+                        for media[i] in media_list : MediaListItem {
+                            // y: i * 58px;
+                            height: 55px;
+                            title: media.title;
+                            artist: media.artist;
+                            playing: media.playing;
+                            play => { root.play_media(i) }
+                        }
+                    }
+                }
+
+                top-shadow := Path {
+                    // x: 10px;
+                    y: 0px;
+                    width: parent.width;
+                    height: 10px;
+                    fill: @linear-gradient(180deg, #33333394 0%, #33333300 100%);
+                    commands: "M 0 0 L \{self.width/1px} 0 L \{self.width/1px} 10 L 0 10 L 0 0";
                 }
             }
         }
