@@ -139,9 +139,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mainpage_background = Image::load_from_path(&Path::new("ui/images/Background Teku.png")).unwrap();
     ui.set_mainpage_background(mainpage_background);
 
+    let ui_handle = ui.as_weak();
     ui.on_toggle_play({
-        let ui_handle = ui.as_weak();
-        let current_file_handle = Arc::clone(&current_file);
         let player_handle = Arc::clone(&audio_player);
         move || {
             let ui = ui_handle.unwrap();
@@ -210,37 +209,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let current_queue_handle = current_queue.clone();
     let ui_handle = ui.as_weak();
     let player_handle = Arc::clone(&audio_player);
-    // TODO will need to change this to a box and probably use refcell. it's just an int but it still
-    // is quite important to not run into a race condition with this value
-    // let mut current_idx_handle = &mut current_idx;
     ui.on_play_media(move |idx| {
         let ui = ui_handle.unwrap();
         ui.set_current_index(idx);
 
-        // let media_list: Vec<MediaData> = queue_model_handle.iter().collect();
-        // for (i, mut media) in queue_model_handle.iter().enumerate() {
-        //     media.playing = i == idx as usize;
-        //     queue_model_handle.set_row_data(i, media);
-        // }
-        // let mut target_model = media_list[idx as usize].clone();
-        // target_model.playing = true;
-        // for (idx, media) in media_list {
-            // queue_model_handle.set_row_data(idx as usize, target_model);
-        // }
         let target = &current_queue_handle.borrow()[idx as usize];
         
         start_new_playback(&ui, queue_model_handle.clone(), target, player_handle.clone(), idx as usize);
-        // load_next_media(player_handle.clone(), current_queue_handle.clone(), idx as usize, false);
     });
 
-    let ui_handle = ui.as_weak();
-    let player_handle = Arc::clone(&audio_player);
     let current_folder_handle = Arc::clone(&current_folder);
     let queue_model_handle = queue_model.clone();
     let current_queue_handle = current_queue.clone();
     ui.on_media_folder_select(move || {
-        let ui = ui_handle.unwrap();
-        let player_handle = Arc::clone(&player_handle);
         let current_folder_handle = Arc::clone(&current_folder_handle);
         // let current_queue_handle = Arc::clone(&current_queue_handle);
         let queue_model = queue_model_handle.clone();
@@ -255,18 +236,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let mut current_folder = current_folder_handle.lock().unwrap();
                 *current_folder = Some(handle.clone());
                 populate_queue_model(handle.path(), current_queue_handle, queue_model);
-                // let queue = build_queue(handle.path()).unwrap();
-                // let mut media_list: Vec<MediaData> = Vec::new();
-                // for media in &queue {
-                //     let mut model = MediaData::default();
-                //     model.title = slint::SharedString::from(media.title().unwrap_or("Unknown Title"));
-                //     model.artist = slint::SharedString::from(media.artist().unwrap_or("Unknown Artist"));
-                //     println!("title: {}", model.title);
-                //     println!("artist: {}", model.artist);
-                //     media_list.push(model);
-                // }
-                // *current_queue_handle.borrow_mut() = queue;
-                // queue_model.set_vec(media_list);
             }
         }).unwrap();
     });
