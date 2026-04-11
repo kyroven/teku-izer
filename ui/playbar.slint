@@ -109,6 +109,9 @@ export component PlayBar inherits Rectangle {
     callback seek_press();
     callback seek(int);
 
+    callback skip();
+    callback rewind();
+
     in property <bool> playing;
     in property <bool> file_selected: false;
     in property <string> media_title: "NO SONG SELECTED";
@@ -119,6 +122,7 @@ export component PlayBar inherits Rectangle {
     in property <int> resume_update_flag;
 
     out property <RepeatMode> repeat_mode: loop-button.repeat_mode;
+    out property <bool> shuffle_mode: shuffle-button.shuffle_mode;
 
     now_playing := NowPlaying {
         y: 0;
@@ -185,10 +189,75 @@ export component PlayBar inherits Rectangle {
         }
     }
 
-    loop-button := Rectangle {
-        x: (parent.width / 2) + 50px;
+    skip-button := Rectangle {
+        // x: (parent.width / 2) + 35px - (self.width / 2);
+        x: (parent.width / 2) + 35px - (self.width / 2);
         y: ((parent.height / 2.75) - (self.height / 2));
-        width: loop-layout.preferred-width;
+        width: 14px;
+        animate width { duration: 50ms; }
+        height: skip-layout.preferred-height;
+
+        states [
+            hover when skip-ta.has-hover : {
+                skip-button.width: 16px;
+            }
+        ]
+
+        skip-layout := HorizontalLayout {
+            Rectangle {
+                skip-icon := Image {
+                    width: skip-button.width;
+                    transform-rotation: 360deg;
+                    source: @image-url("icons/skip.svg");
+                    colorize: Palette.secondary-accent-background;
+                }
+                skip-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        if (loop-button.repeat_mode == RepeatMode.single) { loop-button.repeat_mode = RepeatMode.all; }
+                        root.skip()
+                    }
+                }
+            }
+        }
+    }
+
+    rewind-button := Rectangle {
+        x: (parent.width / 2) - 35px - (self.height / 2);
+        y: ((parent.height / 2.75) - (self.height / 2));
+        width: 14px;
+        animate width { duration: 50ms; }
+        height: rewind-layout.preferred-height;
+
+        states [
+            hover when rewind-ta.has-hover : {
+                rewind-button.width: 16px;
+            }
+        ]
+
+        rewind-layout := HorizontalLayout {
+            Rectangle {
+                rewind-icon := Image {
+                    width: rewind-button.width;
+                    transform-rotation: 180deg;
+                    source: @image-url("icons/skip.svg");
+                    colorize: Palette.secondary-accent-background;
+                }
+                rewind-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        if (loop-button.repeat_mode == RepeatMode.single && root.current_time < 2500) { loop-button.repeat_mode = RepeatMode.all; }
+                        root.rewind()
+                    }
+                }
+            }
+        }
+    }
+
+    loop-button := Rectangle {
+        x: (parent.width / 2) + 60px - (self.width / 2);
+        y: ((parent.height / 2.75) - (self.height / 2));
+        width: loop-ta.has-hover && !loop-ta.pressed ? 20px : 18px;
         height: loop-layout.preferred-height;
         out property <RepeatMode> repeat_mode: none;
 
@@ -207,6 +276,7 @@ export component PlayBar inherits Rectangle {
         loop-layout := HorizontalLayout {
             Rectangle {
                 loop-icon := Image {
+                    width: loop-button.width;
                     source: @image-url("icons/sync.svg");
                     colorize: Palette.secondary-accent-background;
                 }
@@ -225,6 +295,38 @@ export component PlayBar inherits Rectangle {
             }
         }
     }
+
+    shuffle-button := Rectangle {
+        x: (parent.width / 2) - 60px - (self.width / 2);
+        y: ((parent.height / 2.75) - (self.height / 2));
+        width: 14px;
+        animate width { duration: 50ms; }
+        height: shuffle-layout.preferred-height;
+        out property <bool> shuffle_mode: false;
+
+        states [
+            hover when shuffle-ta.has-hover && !shuffle-ta.pressed : {
+                shuffle-button.width: 16px;
+            }
+        ]
+
+        shuffle-layout := HorizontalLayout {
+            Rectangle {
+                shuffle-icon := Image {
+                    width: shuffle-button.width;
+                    source: @image-url("icons/shuffle.svg");
+                    colorize: shuffle-button.shuffle_mode ? Palette.accent-background : Palette.secondary-accent-background;
+                }
+                shuffle-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        shuffle-button.shuffle_mode = !shuffle-button.shuffle_mode;
+                    }
+                }
+            }
+        }
+    }
+    
     seekbar := SeekBar {
         // width: clamp(root.width * 0.5, root.width - now_playing.width - volume.width, 350px);
         width: { if (now_playing.width > volume.width) {

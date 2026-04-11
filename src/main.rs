@@ -18,6 +18,7 @@ use rodio::source;
 use rodio::{Decoder, decoder::DecoderBuilder, Source};
 use slint::{Timer, TimerMode, Image, Model};
 use slint;
+use rand::prelude::*;
 
 slint::include_modules!();
 
@@ -287,12 +288,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         ui.set_resume_update_flag(last + 1);
     });
 
-
     let player_handle = Arc::clone(&audio_player);
-    let current_queue_handle = current_queue.clone();
+    let queue_handle = current_queue.clone();
     let ui_handle = ui.as_weak();
     ui.on_load_next_media(move || {
-        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), current_queue_handle.clone());
+        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), queue_handle.clone());
+    });
+
+    let player_handle = Arc::clone(&audio_player);
+    let queue_handle = current_queue.clone();
+    let ui_handle = ui.as_weak();
+    ui.on_rewind(move || {
+        if player_handle.get_pos().as_millis() >= 2500 {
+            player_handle.try_seek(Duration::ZERO).unwrap();
+        } else {
+            load_prev_media(&ui_handle.clone().unwrap(), player_handle.clone(), queue_handle.clone());
+        }
     });
     
     ui.run()?;
@@ -359,17 +370,63 @@ fn start_new_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>
 fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>) {
     let queue = queue_handle.borrow();
     let current_idx = ui.get_current_index() as usize;
-    let repeat_mode = ui.get_repeat_mode();
+    let do_shuffle = ui.get_shuffle_mode();
+    println!("do_shuffle: {do_shuffle}");
 
-    let at_last_index = current_idx >= (queue.len() - 1);
+    // TODO Implement a smarter shuffle; look up Fisher-Yates shuffle
+    if do_shuffle {
+        let mut rng = rand::rng();
+        let mut pool: Vec<usize> = (0..queue.len()).collect();
+        pool.swap_remove(current_idx);
+        let target_idx = pool.choose(&mut rng).unwrap();
 
-    let target_idx = match repeat_mode {
-        RepeatMode::Single => current_idx,
-        RepeatMode::All => if at_last_index { 0 } else { current_idx + 1 },
-        RepeatMode::None => if at_last_index { return } else { current_idx + 1 },
-    };
+        let target = &queue[*target_idx];
+        ui.set_current_index(*target_idx as i32);
+        start_new_playback(ui, target, player);
+    } else {
+        let repeat_mode = ui.get_repeat_mode();
+        let at_last_index = current_idx == (queue.len() - 1);
 
-    let target = &queue[target_idx];
-    ui.set_current_index(target_idx as i32);
-    start_new_playback(ui, target, player);
+        let target_idx = match repeat_mode {
+            RepeatMode::Single => current_idx,
+            RepeatMode::All => if at_last_index { 0 } else { current_idx + 1 },
+            RepeatMode::None => if at_last_index { return } else { current_idx + 1 },
+        };
+
+        let target = &queue[target_idx];
+        ui.set_current_index(target_idx as i32);
+        start_new_playback(ui, target, player);
+    }
+}
+
+fn load_prev_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>) {
+    let queue = queue_handle.borrow();
+    let current_idx = ui.get_current_index() as usize;
+    let do_shuffle = ui.get_shuffle_mode();
+    println!("do_shuffle: {do_shuffle}");
+
+    // TODO Implement a smarter shuffle; look up Fisher-Yates shuffle
+    if do_shuffle {
+        let mut rng = rand::rng();
+        let mut pool: Vec<usize> = (0..queue.len()).collect();
+        pool.swap_remove(current_idx);
+        let target_idx = pool.choose(&mut rng).unwrap();
+
+        let target = &queue[*target_idx];
+        ui.set_current_index(*target_idx as i32);
+        start_new_playback(ui, target, player);
+    } else {
+        let repeat_mode = ui.get_repeat_mode();
+        let at_first_index = current_idx == 0;
+
+        let target_idx = match repeat_mode {
+            RepeatMode::Single => current_idx,
+            RepeatMode::All => if at_first_index { queue.len() - 1 } else { current_idx - 1 },
+            RepeatMode::None => if at_first_index { return } else { current_idx - 1 },
+        };
+
+        let target = &queue[target_idx];
+        ui.set_current_index(target_idx as i32);
+        start_new_playback(ui, target, player);
+    }
 }

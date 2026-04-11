@@ -34,6 +34,7 @@ export component MainWindow inherits Window {
     callback seek(int);
     callback load_home();
     callback load_next_media();
+    callback rewind();
 
     in property <bool> file_selected: false;
     in property <bool> media_playing: false;
@@ -42,6 +43,7 @@ export component MainWindow inherits Window {
     in property <int> current_index: 0;
     // 0 = no repeat; 1 = repeat all; 2 = repeat single
     out property <RepeatMode> repeat_mode: playbar.repeat_mode;
+    out property <bool> shuffle_mode: playbar.shuffle_mode;
 
     in property <string> media_title: "No Song Selected";
     in property <string> media_artist: "-----------";
@@ -95,6 +97,9 @@ export component MainWindow inherits Window {
             change_volume(level) => { root.volume_level = level; root.change_volume() }
             seek_press() => { root.seek_press() }
             seek(time) => { root.seek(time) }
+
+            skip() => { root.load_next_media() }
+            rewind() => { root.rewind() }
         }
     }
 }
