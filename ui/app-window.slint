@@ -4,10 +4,11 @@ import "fonts/Orbitron-Bold.ttf";
 import "fonts/Orbitron-ExtraBold.ttf";
 
 import { Palette } from "palette.slint";
-import { PlayBar } from "playbar.slint";
+import { PlayBar, RepeatMode } from "playbar.slint";
 import { CustomMenuBar } from "menubar.slint";
 import { MainPage } from "pages/main-page.slint";
 import { FilePage, MediaData } from "pages/file-page.slint";
+export { RepeatMode }
 
 export component MainWindow inherits Window {
     preferred-width: 800px;
@@ -39,6 +40,8 @@ export component MainWindow inherits Window {
     
     in property <[MediaData]> media_list: [];
     in property <int> current_index: 0;
+    // 0 = no repeat; 1 = repeat all; 2 = repeat single
+    out property <RepeatMode> repeat_mode: none;
 
     in property <string> media_title: "No Song Selected";
     in property <string> media_artist: "-----------";

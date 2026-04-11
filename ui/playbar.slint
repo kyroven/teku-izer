@@ -5,6 +5,8 @@ import "fonts/Orbitron-VariableFont_wght.ttf";
 import "fonts/Orbitron-Bold.ttf";
 import "fonts/Orbitron-ExtraBold.ttf";
 
+export enum RepeatMode { none, all, single } 
+
 component SeekBar {
     in-out property <int> current_time: 0;
     in property <int> total_duration;
@@ -48,8 +50,8 @@ component SeekBar {
             maximum: root.total_duration;
             // width: clamp(root.width, 100px, 400px);
             value: root.current_time;
-            changed => { root.press() }
-            released(val) => { root.seek(val) }
+            changed => { root.press(); }
+            released(val) => { root.seek(val); }
         }
 
         total_label := Text {
@@ -116,6 +118,8 @@ export component PlayBar inherits Rectangle {
     in property <int> total_duration;
     in property <int> resume_update_flag;
 
+    out property <RepeatMode> repeat_mode;
+
     now_playing := NowPlaying {
         y: 0;
         x: 0;
@@ -181,8 +185,22 @@ export component PlayBar inherits Rectangle {
         }
     }
 
-    function find_width_constraint() {
-
+    loop-button := Rectangle {
+        Image {
+            source: @image-url("icons/sync.svg");
+            colorize: Palette.secondary-accent-background;
+        }
+        loop-ta := TouchArea {
+            clicked => {
+                if (root.repeat_mode == RepeatMode.none) {
+                    root.repeat_mode = RepeatMode.all;
+                } else if (root.repeat_mode == RepeatMode.all) {
+                    root.repeat_mode = RepeatMode.single;
+                } else if (root.repeat_mode == RepeatMode.single) {
+                    root.repeat_mode = RepeatMode.none;
+                }
+            }
+        }
     }
     seekbar := SeekBar {
         // width: clamp(root.width * 0.5, root.width - now_playing.width - volume.width, 350px);

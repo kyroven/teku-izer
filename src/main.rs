@@ -292,7 +292,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let current_queue_handle = current_queue.clone();
     let ui_handle = ui.as_weak();
     ui.on_load_next_media(move || {
-        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), current_queue_handle.clone(), false);
+        load_next_media(&ui_handle.clone().unwrap(), player_handle.clone(), current_queue_handle.clone());
     });
     
     ui.run()?;
@@ -356,19 +356,20 @@ fn start_new_playback(ui: &MainWindow, media: &Media, player: Arc<rodio::Player>
     ui.set_media_playing(true);
 }
 
-fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>, repeat: bool) {
+fn load_next_media(ui: &MainWindow, player: Arc<rodio::Player>, queue_handle: Rc<RefCell<Vec<Media>>>) {
     let queue = queue_handle.borrow();
     let current_idx = ui.get_current_index() as usize;
-    if current_idx == (queue.len() - 1) && repeat {
-        let target_idx = 0;
-        let target = &queue[target_idx];
-        // player.append(target.create_source().unwrap());
-        ui.set_current_index(target_idx as i32);
-        start_new_playback(ui, target, player);
-    } else if current_idx < (queue.len() - 1) {
-        let target_idx = current_idx + 1;
-        let target = &queue[target_idx];
-        ui.set_current_index(target_idx as i32);
-        start_new_playback(ui, target, player);
-    }
+    let repeat_mode = ui.get_repeat_mode();
+
+    let at_last_index = current_idx >= (queue.len() - 1);
+
+    let target_idx = match repeat_mode {
+        RepeatMode::Single => current_idx,
+        RepeatMode::All => if at_last_index { 0 } else { current_idx + 1 },
+        RepeatMode::None => if at_last_index { return } else { current_idx + 1 },
+    };
+
+    let target = &queue[target_idx];
+    ui.set_current_index(target_idx as i32);
+    start_new_playback(ui, target, player);
 }
