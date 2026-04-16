@@ -12,6 +12,7 @@ rand = "0.10.1"
 rfd = "0.17.2"
 rodio = "0.22.2"
 slint = { version = "1.14.1", features = ["renderer-skia"] }
+symphonia = { version = "0.5.5", features = ["all-formats", "all-codecs"] }
 tokio = "1.50.0"
 trpl = "0.3.0"
 

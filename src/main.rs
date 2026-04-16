@@ -21,6 +21,8 @@ use slint;
 use rand::prelude::*;
 use directories::UserDirs;
 
+mod sympho_handle;
+
 slint::include_modules!();
 
 const SUPPORTED_FILE_TYPES: [&str; 4] = ["ogg", "wav", "mp3", "flac"];
