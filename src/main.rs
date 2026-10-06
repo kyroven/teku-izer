@@ -4,7 +4,7 @@
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::cell::RefCell;
 use std::io;
 use std::io::BufReader;
@@ -12,6 +12,7 @@ use std::fs;
 use std::fs::File;
 use std::time::Duration;
 use std::fmt;
+use std::thread;
 
 use rfd::{AsyncFileDialog, FileHandle};
 use rodio::source;
@@ -20,6 +21,10 @@ use slint::{Timer, TimerMode, Image, Model};
 use slint;
 use rand::prelude::*;
 use directories::UserDirs;
+use cpal::traits::StreamTrait;
+use spectrum_analyzer::FiniteF32;
+
+mod analyze;
 
 slint::include_modules!();
 
@@ -124,6 +129,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let audio_sink = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
     let audio_player = Arc::new(rodio::Player::connect_new(&audio_sink.mixer()));
+
+    let (analyzer_tx, analyzer_rx) = mpsc::channel::<Vec<FiniteF32>>();
     
     let ui = MainWindow::new()?;
 
@@ -289,6 +296,33 @@ fn main() -> Result<(), Box<dyn Error>> {
             load_prev_media(&ui_handle.clone().unwrap(), player_handle.clone(), queue_handle.clone(), queue_model_handle.clone());
         }
     });
+
+    // Handling the audio visualizer
+    let stream = analyze::analyze_global(analyzer_tx).unwrap();
+    stream.play().unwrap();
+    let ui_handle = ui.as_weak();
+    let analyzer_loop_timer = Arc::new(Timer::default());
+    let analyzer_loop_timer_handle = analyzer_loop_timer.clone();
+    analyzer_loop_timer.start(TimerMode::Repeated, Duration::from_millis(20), move || {
+        let ui = ui_handle.unwrap();
+        let packet_res = analyzer_rx.try_recv();
+        match packet_res {
+            Ok(packet) => {
+                println!("{packet:?}");
+            },
+            Err(err) => {
+                println!("Error with analyzer channel: {err}");
+                match err {
+                    mpsc::TryRecvError::Empty => {},
+                    mpsc::TryRecvError::Disconnected => {
+                        eprintln!("Stopping analyzer loop...");
+                        analyzer_loop_timer_handle.stop();
+                    },
+                }
+            }
+        }
+    });
+
     
     ui.run()?;
     
