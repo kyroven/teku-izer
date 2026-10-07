@@ -44,11 +44,14 @@ export component MainPage inherits Rectangle {
                 }
                 HorizontalLayout {
                     padding: 3px;
+                    spacing: 3px;
                     for bin[i] in root.analyzer_bins : Rectangle {
                         width: 20px;
-                        height: 20px;
-                        border-color: blue;
-                        background: blue;
+                        Rectangle {
+                            height: bin * 1px;
+                            background: teal;
+                            y: parent.height - self.height;
+                        }
                     }
                 }
                 // background: #562769;

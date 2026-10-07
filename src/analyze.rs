@@ -1,11 +1,9 @@
-use std::thread::sleep;
-use std::time::Duration;
 use std::sync::mpsc;
 
-use cpal::{Data, DeviceId, FromSample, Sample, SampleFormat, Stream, StreamConfig};
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::StreamConfig;
+use cpal::traits::{DeviceTrait, HostTrait};
 
-use spectrum_analyzer::{FiniteF32, FrequencySpectrum, NonNegF32, samples_fft_to_spectrum};
+use spectrum_analyzer::{FiniteF32, FrequencySpectrum, samples_fft_to_spectrum};
 use spectrum_analyzer::scaling::scale_20_times_log10;
 use spectrum_analyzer::windows::hann_window;
 
