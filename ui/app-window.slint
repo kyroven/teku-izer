@@ -58,9 +58,12 @@ export component MainWindow inherits Window {
     in property <[float]> analyzer_bins: [];
 
     VerticalLayout {
+        height: 100%;
+        
         menubar := CustomMenuBar {
             // width: root.width;
             // file_button => { root.media_file_select() }
+            vertical-stretch: 0;
         }
 
         if (menubar.current_page == 0) : MainPage {
@@ -72,6 +75,9 @@ export component MainWindow inherits Window {
             total_duration: root.total_duration;
             resume_update_flag: root.resume_update_flag;
             background_image: root.mainpage_background;
+            available_height: root.height - menubar.height - playbar.height;
+            analyzer_bins: root.analyzer_bins;
+            vertical-stretch: 1;
         }
         if (menubar.current_page == 1) : FilePage {
             font-family: root.default-font-family;
@@ -82,6 +88,7 @@ export component MainWindow inherits Window {
         }
         
         playbar := PlayBar {
+            vertical-stretch: 0;
             // width: parent.width;
             // y: (parent.height - self.height);
             play_button => { root.toggle_play() }

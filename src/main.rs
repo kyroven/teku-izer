@@ -12,7 +12,6 @@ use std::fs;
 use std::fs::File;
 use std::time::Duration;
 use std::fmt;
-use std::thread;
 
 use rfd::{AsyncFileDialog, FileHandle};
 use rodio::source;
@@ -313,8 +312,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let model = ui.get_analyzer_bins();
                 let analyzer_model = model.as_any().downcast_ref::<VecModel<f32>>()
                     .expect("We know we set a VecModel earlier");
-                analyzer_model.set_vec(packet.into_iter().map(|f| f.into::<f32>()));
                 println!("{packet:?}");
+                analyzer_model.set_vec(packet.into_iter().map(|f| f.val()).collect::<Vec<f32>>());
             },
             Err(err) => {
                 println!("Error with analyzer channel: {err}");

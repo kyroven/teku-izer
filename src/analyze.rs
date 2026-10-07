@@ -65,9 +65,6 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>) -> Result<cpal:
 
                     let bins = create_bins(spectrum);
 
-                    // println!("Resolution: {:?}", spectrum.frequency_resolution());
-                    // println!("DATA -------------------------");
-                    // print_bins(bins);
                     let _ = analyzer_tx_handle.send(bin_maximums(bins));
                     
                     sample_buffer.clear();

@@ -6,7 +6,7 @@ import { Palette } from "../palette.slint";
 import { PlayBar } from "../playbar.slint";
 import { VerticalBox, HorizontalBox } from "std-widgets.slint";
 
-export component MainPage {
+export component MainPage inherits Rectangle {
     // preferred-width: 800px;
 
     in property <bool> media_playing;
@@ -17,6 +17,11 @@ export component MainPage {
     in property <int> total_duration;
     in property <int> resume_update_flag;
     in property <image> background_image;
+    in property <length> available_height: 300px;
+    in property <[float]> analyzer_bins : [
+        0.0,
+        0.0,
+    ];
 
     // HorizontalBox {
     //     padding: 0px;
@@ -28,15 +33,23 @@ export component MainPage {
             main_area := Rectangle {
                 preferred-height: 480px;
                 // width: root.width;
-                // height: (root.height - menubar.height - playbar.height);
+                height: available_height;
                 // x: 0;
                 clip: true;
                 Image {
                     source: root.background_image;
                     width: self.source.width * 0.5px;
                     height: self.source.height * 0.5px;
-                    // width: parent.width;
-                    // height: parent.height;
+
+                }
+                HorizontalLayout {
+                    padding: 3px;
+                    for bin[i] in root.analyzer_bins : Rectangle {
+                        width: 20px;
+                        height: 20px;
+                        border-color: blue;
+                        background: blue;
+                    }
                 }
                 // background: #562769;
             }
