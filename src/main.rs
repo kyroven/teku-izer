@@ -17,7 +17,7 @@ use std::thread;
 use rfd::{AsyncFileDialog, FileHandle};
 use rodio::source;
 use rodio::{Decoder, decoder::DecoderBuilder, Source};
-use slint::{Timer, TimerMode, Image, Model};
+use slint::{Image, Model, Timer, TimerMode, VecModel};
 use slint;
 use rand::prelude::*;
 use directories::UserDirs;
@@ -129,8 +129,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let audio_sink = rodio::DeviceSinkBuilder::open_default_sink()
         .expect("open default audio stream");
     let audio_player = Arc::new(rodio::Player::connect_new(&audio_sink.mixer()));
-
-    let (analyzer_tx, analyzer_rx) = mpsc::channel::<Vec<FiniteF32>>();
     
     let ui = MainWindow::new()?;
 
@@ -298,6 +296,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     // Handling the audio visualizer
+    let (analyzer_tx, analyzer_rx) = mpsc::channel::<Vec<FiniteF32>>();
+    let bin_model = Rc::new(VecModel::from(vec![]));
+    ui.set_analyzer_bins(bin_model.clone().into());
+
     let stream = analyze::analyze_global(analyzer_tx).unwrap();
     stream.play().unwrap();
     let ui_handle = ui.as_weak();
@@ -308,6 +310,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         let packet_res = analyzer_rx.try_recv();
         match packet_res {
             Ok(packet) => {
+                let model = ui.get_analyzer_bins();
+                let analyzer_model = model.as_any().downcast_ref::<VecModel<f32>>()
+                    .expect("We know we set a VecModel earlier");
+                analyzer_model.set_vec(packet.into_iter().map(|f| f.into::<f32>()));
                 println!("{packet:?}");
             },
             Err(err) => {
