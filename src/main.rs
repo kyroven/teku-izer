@@ -306,26 +306,58 @@ fn main() -> Result<(), Box<dyn Error>> {
     let analyzer_loop_timer_handle = analyzer_loop_timer.clone();
     analyzer_loop_timer.start(TimerMode::Repeated, Duration::from_millis(20), move || {
         let ui = ui_handle.unwrap();
-        let packet_res = analyzer_rx.try_recv();
-        match packet_res {
-            Ok(packet) => {
-                let model = ui.get_analyzer_bins();
-                let analyzer_model = model.as_any().downcast_ref::<VecModel<f32>>()
-                    .expect("We know we set a VecModel earlier");
-                println!("{packet:?}");
-                analyzer_model.set_vec(packet.into_iter().map(|f| f.val()).collect::<Vec<f32>>());
-            },
-            Err(err) => {
-                println!("Error with analyzer channel: {err}");
-                match err {
-                    mpsc::TryRecvError::Empty => {},
-                    mpsc::TryRecvError::Disconnected => {
-                        eprintln!("Stopping analyzer loop...");
-                        analyzer_loop_timer_handle.stop();
-                    },
+
+        let mut latest_packet_res = None;
+        loop {
+            match analyzer_rx.try_recv() {
+                Ok(packet) => {
+                    latest_packet_res = Some(packet);
+                },
+                Err(err) => {
+                    match err {
+                        mpsc::TryRecvError::Empty => break,
+                        mpsc::TryRecvError::Disconnected => {
+                            eprintln!("Error with analyzer channel: {err}");
+                            eprintln!("Stopping analyzer loop...");
+                            analyzer_loop_timer_handle.stop();
+                            break
+                        },
+                    }
                 }
             }
         }
+
+        match latest_packet_res {
+            Some(packet) => {
+                let model = ui.get_analyzer_bins();
+                let analyzer_model = model.as_any().downcast_ref::<VecModel<f32>>()
+                    .expect("We know we set a VecModel earlier");
+                // println!("{packet:?}");
+                analyzer_model.set_vec(packet.into_iter().map(|f| f.val()).collect::<Vec<f32>>());
+            },
+            None => {},
+        }
+
+        // let packet_res = analyzer_rx.try_recv();
+        // match packet_res {
+        //     Ok(packet) => {
+        //         let model = ui.get_analyzer_bins();
+        //         let analyzer_model = model.as_any().downcast_ref::<VecModel<f32>>()
+        //             .expect("We know we set a VecModel earlier");
+        //         // println!("{packet:?}");
+        //         analyzer_model.set_vec(packet.into_iter().map(|f| f.val()).collect::<Vec<f32>>());
+        //     },
+        //     Err(err) => {
+        //         println!("Error with analyzer channel: {err}");
+        //         match err {
+        //             mpsc::TryRecvError::Empty => {},
+        //             mpsc::TryRecvError::Disconnected => {
+        //                 eprintln!("Stopping analyzer loop...");
+        //                 analyzer_loop_timer_handle.stop();
+        //             },
+        //         }
+        //     }
+        // }
     });
 
     

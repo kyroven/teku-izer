@@ -53,6 +53,7 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>) -> Result<cpal:
                 sample_buffer.push(mono_sample);
 
                 if sample_buffer.len() == n {
+                    normalize_samples(&mut sample_buffer);
                     let windowed_samples = hann_window(&sample_buffer);
                     let spectrum = samples_fft_to_spectrum(
                         &windowed_samples,
@@ -76,6 +77,15 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>) -> Result<cpal:
     );
 
     return stream
+}
+
+fn normalize_samples(samples: &mut Vec<f32>) {
+    let max = samples.iter_mut().map(|s| {
+        FiniteF32::try_new(*s).expect("Uh oh we just got an Infinite or NaN sample")
+    }).max().expect("We know this is only called when the vec is full");
+    if max > 0.0 {
+        samples.iter_mut().for_each(|s| *s = *s / max);
+    }
 }
 
 fn create_bins(spectrum: FrequencySpectrum) -> Vec<((f32, f32), Vec<FiniteF32>)> {
