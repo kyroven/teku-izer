@@ -12,6 +12,7 @@ use std::fs;
 use std::fs::File;
 use std::time::Duration;
 use std::fmt;
+use std::env;
 
 use rfd::{AsyncFileDialog, FileHandle};
 use rodio::source;
@@ -114,6 +115,8 @@ fn read_metadata(path: &Path) -> (Option<String>, Option<String>, Option<f64>) {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+
+    let args: Vec<String> = env::args().collect();
 
     // TODO actually i don't think any of these need to be Arcs
     // I thought slint::spawn_local spawned a new thread but it actually doesn't
@@ -299,7 +302,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     let bin_model = Rc::new(VecModel::from(vec![]));
     ui.set_analyzer_bins(bin_model.clone().into());
 
-    let stream = analyze::analyze_global(analyzer_tx).unwrap();
+    let try_device_idx = args.get(1);
+
+    let device_idx: usize = match try_device_idx {
+        Some(idx_str) => {
+            match idx_str.parse() {
+                Ok(idx) => idx,
+                Err(err) => {
+                    eprintln!("Error parsing audio device arg: {err}");
+                    eprintln!("Defaulting to 0");
+                    0
+                }
+            }
+        },
+        None => 0,
+    };
+
+    let stream = analyze::analyze_global(analyzer_tx, device_idx).unwrap();
     stream.play().unwrap();
     let ui_handle = ui.as_weak();
     let analyzer_loop_timer = Arc::new(Timer::default());
@@ -337,27 +356,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
             None => {},
         }
-
-        // let packet_res = analyzer_rx.try_recv();
-        // match packet_res {
-        //     Ok(packet) => {
-        //         let model = ui.get_analyzer_bins();
-        //         let analyzer_model = model.as_any().downcast_ref::<VecModel<f32>>()
-        //             .expect("We know we set a VecModel earlier");
-        //         // println!("{packet:?}");
-        //         analyzer_model.set_vec(packet.into_iter().map(|f| f.val()).collect::<Vec<f32>>());
-        //     },
-        //     Err(err) => {
-        //         println!("Error with analyzer channel: {err}");
-        //         match err {
-        //             mpsc::TryRecvError::Empty => {},
-        //             mpsc::TryRecvError::Disconnected => {
-        //                 eprintln!("Stopping analyzer loop...");
-        //                 analyzer_loop_timer_handle.stop();
-        //             },
-        //         }
-        //     }
-        // }
     });
 
     

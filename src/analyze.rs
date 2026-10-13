@@ -7,7 +7,7 @@ use spectrum_analyzer::{FiniteF32, FrequencySpectrum, samples_fft_to_spectrum};
 use spectrum_analyzer::scaling::scale_20_times_log10;
 use spectrum_analyzer::windows::hann_window;
 
-pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>) -> Result<cpal::Stream, cpal::Error> {
+pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx: usize) -> Result<cpal::Stream, cpal::Error> {
     let host = cpal::default_host();
     let device_list: Vec<cpal::Device> = host.output_devices().expect("no output devices available").collect();
     // TODO let user choose audio device; WIP code commented out here
@@ -19,7 +19,12 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>) -> Result<cpal:
     // let device_id_number: usize = device_id_string.trim().parse().expect("invalid device id");
     // let device = &device_list[device_id_number - 1];
 
-    let device = &device_list[0];
+    if device_idx >= device_list.len() {
+        eprintln!("Audio Device argument out of bounds! Defaulting to 0");
+        device_idx = 0;
+    }
+
+    let device = &device_list[device_idx];
     println!("selected: {}", device);
     println!("supports output: {}", device.supports_output());
     println!("supports input: {}", device.supports_input());
