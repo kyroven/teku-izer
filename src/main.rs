@@ -25,6 +25,7 @@ use cpal::traits::StreamTrait;
 use spectrum_analyzer::FiniteF32;
 
 mod analyze;
+mod frequency;
 
 slint::include_modules!();
 

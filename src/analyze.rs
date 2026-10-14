@@ -4,7 +4,7 @@ use cpal::StreamConfig;
 use cpal::traits::{DeviceTrait, HostTrait};
 
 use spectrum_analyzer::{FiniteF32, FrequencySpectrum, samples_fft_to_spectrum};
-use spectrum_analyzer::scaling;
+use spectrum_analyzer::scaling::{self, SpectrumScalingFunction};
 use spectrum_analyzer::windows::hann_window;
 
 pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx: usize) -> Result<cpal::Stream, cpal::Error> {
@@ -50,6 +50,7 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
 
     // Coherent gain of Hann Window
     let c_gain = FiniteF32::try_new(0.5).expect("We know 0.5 is finite");
+    let two = FiniteF32::try_new(2.0).expect("We know 2.0 is finite");
 
     let analyzer_tx_handle = analyzer_tx.clone();
 
@@ -60,7 +61,10 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
                 let mono_sample = chunk.iter().sum::<f32>() / channels as f32;
                 sample_buffer.push(mono_sample);
 
-                let scaling_fn = |val, stats: &_| scaling::scale_20_times_log10(scaling::divide_by_N(val, stats), stats);
+                let scaling_fn = |val, stats: &_| {
+                    
+                    scaling::scale_20_times_log10(scaling::divide_by_N(val, stats), stats)
+                };
 
                 if sample_buffer.len() == n {
                     let windowed_samples = hann_window(&sample_buffer);
@@ -68,7 +72,7 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
                         &windowed_samples,
                         config.sample_rate,
                         spectrum_analyzer::FrequencyLimit::All,
-                        Some(&scaling_fn)
+                        None
                     ).unwrap();
 
                     let bins = create_bins(spectrum, c_gain);
@@ -86,6 +90,27 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
     );
 
     return stream
+}
+
+fn to_decibels(
+    spectrum: &FrequencySpectrum,
+    scaling_fn: &SpectrumScalingFunction,
+    c_gain: FiniteF32,
+    two: FiniteF32,
+) {
+    let mut data = spectrum.data().to_owned();
+    for (idx, datum) in &mut data.iter_mut().enumerate() {
+        if idx == 0 || idx == (spectrum.data().len() - 1) {
+            // The DC and Nyquist bins don't get multiplied by 2, but still get divided by
+            // the coherent gain of the window (0.5 for Hann)
+            datum.1 = datum.1 / c_gain
+        } else {
+            // Every other bin gets multiplied by 2 because this is a single sided spectrum
+            // and then divided by the coherent gain of the window (0.5 for Hann)
+            datum.1 = datum.1 / c_gain * two;
+        }
+    }
+    let db_spectrum =
 }
 
 fn create_bins(spectrum: FrequencySpectrum, c_gain: FiniteF32) -> Vec<((f32, f32), Vec<FiniteF32>)> {
