@@ -5770,6 +5770,7 @@ dependencies = [
  "audiotags",
  "cpal 0.18.2",
  "directories",
+ "libm",
  "rand 0.10.1",
  "rfd",
  "rodio",

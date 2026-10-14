@@ -3,8 +3,7 @@ use std::sync::mpsc;
 use cpal::StreamConfig;
 use cpal::traits::{DeviceTrait, HostTrait};
 
-use spectrum_analyzer::{FiniteF32, FrequencySpectrum, samples_fft_to_spectrum};
-use spectrum_analyzer::scaling::{self, SpectrumScalingFunction};
+use spectrum_analyzer::{FiniteF32, FrequencySpectrum, NonNegF32, samples_fft_to_spectrum};
 use spectrum_analyzer::windows::hann_window;
 
 pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx: usize) -> Result<cpal::Stream, cpal::Error> {
@@ -61,11 +60,6 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
                 let mono_sample = chunk.iter().sum::<f32>() / channels as f32;
                 sample_buffer.push(mono_sample);
 
-                let scaling_fn = |val, stats: &_| {
-                    
-                    scaling::scale_20_times_log10(scaling::divide_by_N(val, stats), stats)
-                };
-
                 if sample_buffer.len() == n {
                     let windowed_samples = hann_window(&sample_buffer);
                     let spectrum = samples_fft_to_spectrum(
@@ -75,7 +69,7 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
                         None
                     ).unwrap();
 
-                    let bins = create_bins(spectrum, c_gain);
+                    let bins = create_bins(to_decibels(&spectrum, spectrum.samples_len() as f32, c_gain, two));
 
                     let _ = analyzer_tx_handle.send(bin_maximums(bins));
                     
@@ -94,47 +88,40 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
 
 fn to_decibels(
     spectrum: &FrequencySpectrum,
-    scaling_fn: &SpectrumScalingFunction,
+    n: f32,
     c_gain: FiniteF32,
     two: FiniteF32,
-) {
+) -> Vec<(NonNegF32, FiniteF32)> {
+    const DB_FLOOR: f32 = 1e-5;
     let mut data = spectrum.data().to_owned();
     for (idx, datum) in &mut data.iter_mut().enumerate() {
+        let temp = if n.abs() < 0.001 { datum.1.into() } else { datum.1 / n };
         if idx == 0 || idx == (spectrum.data().len() - 1) {
             // The DC and Nyquist bins don't get multiplied by 2, but still get divided by
             // the coherent gain of the window (0.5 for Hann)
-            datum.1 = datum.1 / c_gain
+            datum.1 = (20.0 * libm::log10f((temp / c_gain).max(DB_FLOOR))).into();
         } else {
             // Every other bin gets multiplied by 2 because this is a single sided spectrum
             // and then divided by the coherent gain of the window (0.5 for Hann)
-            datum.1 = datum.1 / c_gain * two;
+            datum.1 = (20.0 * libm::log10f((temp / c_gain * two).max(DB_FLOOR))).into();
         }
     }
-    let db_spectrum =
+    
+    return data
 }
 
-fn create_bins(spectrum: FrequencySpectrum, c_gain: FiniteF32) -> Vec<((f32, f32), Vec<FiniteF32>)> {
+fn create_bins(spectrum: Vec<(NonNegF32, FiniteF32)>) -> Vec<((f32, f32), Vec<FiniteF32>)> {
     let mut bins = vec![((0_f32, 20_f32), Vec::new()), ((20_f32, 30_f32), Vec::new()),
                         ((30_f32, 60_f32), Vec::new()), ((60_f32, 120_f32), Vec::new()),
                         ((120_f32, 280_f32), Vec::new()), ((280_f32, 700_f32), Vec::new()),
                         ((700_f32, 1500_f32), Vec::new()), ((1500_f32, 3000_f32), Vec::new()),
                         ((3000_f32, 7000_f32), Vec::new()), ((7000_f32, 15000_f32), Vec::new()),
                         ((15000_f32, 99999_f32), Vec::new())];
-
-    let two = FiniteF32::try_new(2.0).expect("We know 2.0 is finite");
     
-    for (idx, datum) in spectrum.data().iter().enumerate() {
+    for datum in spectrum.iter() {
         for bin in &mut bins {
             if datum.0 >= bin.0.0 && datum.0 < bin.0.1 {
-                if idx == 0 || idx == (spectrum.data().len() - 1) {
-                    // The DC and Nyquist bins don't get multiplied by 2, but still get divided by
-                    // the coherent gain of the window (0.5 for Hann)
-                    bin.1.push(datum.1 / c_gain);
-                } else {
-                    // Every other bin gets multiplied by 2 because this is a single sided spectrum
-                    // and then divided by the coherent gain of the window (0.5 for Hann)
-                    bin.1.push(datum.1 / c_gain * two);
-                }
+                bin.1.push(datum.1);
             }
         }
     }
