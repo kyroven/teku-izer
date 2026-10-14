@@ -21,6 +21,9 @@ export component MainPage inherits Rectangle {
     in property <[float]> analyzer_bins : [
         0.0,
         0.0,
+        0.0,
+        0.0,
+        0.0,
     ];
 
     // HorizontalBox {
@@ -43,14 +46,31 @@ export component MainPage inherits Rectangle {
 
                 }
                 HorizontalLayout {
-                    padding: 3px;
-                    spacing: 3px;
+                    alignment: center;
+                    padding: 30px;
+                    x: (parent.width / 2) - (self.width / 2);
+                    spacing: main_area.height * 0.0529;
                     for bin[i] in root.analyzer_bins : Rectangle {
-                        width: 20px;
+                        width: main_area.height * 0.0529;
                         Rectangle {
-                            height: bin * 1px;
-                            background: teal;
-                            y: parent.height - self.height;
+                            height: 50%;
+                            border-color: deepskyblue;
+                            border-width: 1px;
+                            y: parent.height * 0.75 - self.height;
+                        }
+                        level := Rectangle {
+                            // height: bin * 1px;
+                            height: parent.height * 0.5 * bin;
+                            background: deepskyblue;
+                            y: parent.height * 0.75 - self.height;
+                        }
+                        Text {
+                            color: white;
+                            text: "FILE";
+                            font-weight: 700;
+                            font-family: "Orbitron";
+                            font-size: 12px;
+                            y: level.y + level.height + 10px;
                         }
                     }
                 }

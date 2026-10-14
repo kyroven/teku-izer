@@ -351,7 +351,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 let model = ui.get_analyzer_bins();
                 let analyzer_model = model.as_any().downcast_ref::<VecModel<f32>>()
                     .expect("We know we set a VecModel earlier");
-                // println!("{packet:?}");
+                println!("{packet:?}");
                 analyzer_model.set_vec(packet.into_iter().map(|f| f.val()).collect::<Vec<f32>>());
             },
             None => {},
