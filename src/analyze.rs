@@ -44,7 +44,13 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
     println!("Sample Rate: {:?}", config.sample_rate);
     println!("Sample Format: {:?}", supported_config.sample_format());
 
-    let n = 1024;
+    // TODO when I tried going up to 2048, was super laggy and cpal was throwing a bunch of buffer
+    // underrun/overrun errors. See if there's a way to fix this; lmms has some stuff to do with
+    // detecting when processing can't keep up?
+    // lmms allows bins from 256 to 16384 - "ranging from barely useful to barely acceptable because
+    // of performance and latency reasons" - default is 2048
+    // WAIT FOUND IT WINDOW OVERLAP IS THE KEY
+    let n = 2048;
     let mut sample_buffer = Vec::with_capacity(n);
 
     // Coherent gain of Hann Window
@@ -69,9 +75,10 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
                         None
                     ).unwrap();
 
-                    let bins = create_bins(to_decibels(&spectrum, spectrum.samples_len() as f32, c_gain, two));
+                    let n = spectrum.samples_len() as f32;
+                    let bins = create_bins(to_decibels(spectrum, n, c_gain, two));
 
-                    let _ = analyzer_tx_handle.send(bin_maximums(bins));
+                    let _ = analyzer_tx_handle.send(to_ui_scale(bin_maximums(bins)));
                     
                     sample_buffer.clear();
                 }
@@ -87,7 +94,7 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
 }
 
 fn to_decibels(
-    spectrum: &FrequencySpectrum,
+    spectrum: FrequencySpectrum,
     n: f32,
     c_gain: FiniteF32,
     two: FiniteF32,
@@ -110,6 +117,7 @@ fn to_decibels(
     return data
 }
 
+// Acceleracers bins: 31(?unsure) 83(??really unsure) 125 250 1k 2k(?unsure) 4k 8k 10k
 fn create_bins(spectrum: Vec<(NonNegF32, FiniteF32)>) -> Vec<((f32, f32), Vec<FiniteF32>)> {
     let mut bins = vec![((0_f32, 20_f32), Vec::new()), ((20_f32, 30_f32), Vec::new()),
                         ((30_f32, 60_f32), Vec::new()), ((60_f32, 120_f32), Vec::new()),
@@ -129,10 +137,20 @@ fn create_bins(spectrum: Vec<(NonNegF32, FiniteF32)>) -> Vec<((f32, f32), Vec<Fi
     return bins
 }
 
+// TODO see if there is a better way to represent "loudness" across a bin
 fn bin_maximums (bins: Vec<((f32, f32), Vec<FiniteF32>)>) -> Vec<FiniteF32> {
     let mut maximums = Vec::new();
     for bin in bins {
         maximums.push(bin.1.into_iter().max().unwrap_or(0.0_f32.into()));
     }
     return maximums
+}
+
+fn to_ui_scale (mut bins: Vec<FiniteF32>) -> Vec<FiniteF32> {
+    // Decibel values are -100 to 0
+    // Divide by 100 to get -1 to 0, add 1 to get 0 to 1
+    for bin in &mut bins {
+        *bin = (*bin / 100.0 + 1.0).into();
+    }
+    return bins
 }
