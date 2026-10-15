@@ -1,4 +1,5 @@
 use std::sync::mpsc;
+use std::thread;
 
 use cpal::StreamConfig;
 use cpal::traits::{DeviceTrait, HostTrait};
@@ -51,6 +52,7 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
     // of performance and latency reasons" - default is 2048
     // WAIT FOUND IT WINDOW OVERLAP IS THE KEY
     let n = 2048;
+    let overlap = 2;
     let mut sample_buffer = Vec::with_capacity(n);
 
     // Coherent gain of Hann Window
@@ -58,6 +60,37 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
     let two = FiniteF32::try_new(2.0).expect("We know 2.0 is finite");
 
     let analyzer_tx_handle = analyzer_tx.clone();
+
+    let (cruncher_tx, cruncher_rx) = mpsc::channel::<Vec<f32>>();
+
+    thread::spawn(move || {
+        loop {
+            let result = &cruncher_rx.recv();
+
+            let windowed_samples = match result {
+                Ok(packet) => {
+                    // hann_window(packet)
+                    packet
+                },
+                Err(err) => {
+                    eprintln!("Error with analyzer -> cruncher channel: {err}");
+                    break
+                },
+            };
+
+            let spectrum = samples_fft_to_spectrum(
+                &windowed_samples,
+                config.sample_rate,
+                spectrum_analyzer::FrequencyLimit::All,
+                None
+            ).unwrap();
+
+            let n = spectrum.samples_len() as f32;
+            let bins = create_bins(to_decibels(spectrum, n, c_gain, two));
+
+            let _ = analyzer_tx_handle.send(to_ui_scale(bin_maximums(bins)));
+        }
+    });
 
     let stream = device.build_input_stream(
         config,
@@ -67,20 +100,16 @@ pub fn analyze_global(analyzer_tx: mpsc::Sender<Vec<FiniteF32>>, mut device_idx:
                 sample_buffer.push(mono_sample);
 
                 if sample_buffer.len() == n {
-                    let windowed_samples = hann_window(&sample_buffer);
-                    let spectrum = samples_fft_to_spectrum(
-                        &windowed_samples,
-                        config.sample_rate,
-                        spectrum_analyzer::FrequencyLimit::All,
-                        None
-                    ).unwrap();
 
-                    let n = spectrum.samples_len() as f32;
-                    let bins = create_bins(to_decibels(spectrum, n, c_gain, two));
+                    let packet: Vec<f32> = hann_window(&sample_buffer);
+                    _ = cruncher_tx.send(packet);
 
-                    let _ = analyzer_tx_handle.send(to_ui_scale(bin_maximums(bins)));
-                    
-                    sample_buffer.clear();
+                    if overlap == 1 {
+                        sample_buffer.clear();
+                    } else {
+                        let drop_size = n as usize / overlap;
+                        sample_buffer.drain(0..drop_size);
+                    }
                 }
             }
         },
